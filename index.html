@@ -31,7 +31,7 @@
             })
             .then(function(data) {
                 // Добавляем данные на карту
-                       L.geoJSON(data, {
+                               L.geoJSON(data, {
             // 1. Настройка стиля для ЛИНИЙ и ПОЛИГОНОВ
             style: function(feature) {
                 return {
@@ -60,20 +60,6 @@
             }
         }).addTo(map);
 
-                    onEachFeature: function (feature, layer) {
-                        // Если у метки есть имя (из Google Maps), оно всплывет при клике
-                        if (feature.properties && feature.properties.name) {
-                            layer.bindPopup(feature.properties.name);
-                        }
-                    }
-                }).addTo(map);
-                console.log("Данные успешно загружены на карту!");
-            })
-            .catch(function(error) {
-                console.log("Ошибка с файлом данных:", error);
-            });
-    </script>
-</body>
 </html>
 
 
