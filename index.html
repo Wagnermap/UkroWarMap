@@ -31,7 +31,35 @@
             })
             .then(function(data) {
                 // Добавляем данные на карту
-                L.geoJSON(data, {
+                       L.geoJSON(data, {
+            // 1. Настройка стиля для ЛИНИЙ и ПОЛИГОНОВ
+            style: function(feature) {
+                return {
+                    color: "red",       // Цвет линий
+                    fillColor: "red",   // Цвет заливки внутри
+                    fillOpacity: 0.5,   // Прозрачность (от 0 до 1)
+                    weight: 0,          // Толщина линии контура (0 — убирает границу)
+                    stroke: false       // Полностью отключает отрисовку границ
+                };
+            },
+            // 2. Настройка стиля для ТОЧЕК (маркеров)
+            pointToLayer: function(feature, latlng) {
+                return L.circleMarker(latlng, {
+                    radius: 7,          // Размер точки
+                    fillColor: "red",   // Цвет точки
+                    color: "red",       // Цвет обводки точки
+                    weight: 0,          // Убираем обводку точки
+                    fillOpacity: 0.8    // Прозрачность точки
+                });
+            },
+            // 3. Всплывающие окна (оставляем как было)
+            onEachFeature: function (feature, layer) {
+                if (feature.properties && feature.properties.name) {
+                    layer.bindPopup(feature.properties.name);
+                }
+            }
+        }).addTo(map);
+
                     onEachFeature: function (feature, layer) {
                         // Если у метки есть имя (из Google Maps), оно всплывет при клике
                         if (feature.properties && feature.properties.name) {
