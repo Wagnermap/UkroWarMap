@@ -1,71 +1,27 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Интерактивная карта</title>
-    <!-- Подключаем стили Leaflet -->
+    <title>Тест карты</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        /* Делаем карту на весь экран */
-        body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; }
-        #map { width: 100%; height: 100vh; background: #0b0b0b; }
-        
-        /* Красивое оформление всплывающих окон (как на проф. картах) */
-        .leaflet-popup-content-wrapper {
-            background: #222;
-            color: #fff;
-            border-radius: 4px;
-        }
-        .leaflet-popup-tip { background: #222; }
+        body, html { margin: 0; padding: 0; height: 100%; }
+        #map { width: 100%; height: 100vh; }
     </style>
 </head>
 <body>
+    <div id="map"></div>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // Координаты и зум
+        var map = L.map('map').setView([48.0, 37.0], 7); 
 
-<div id="map"></div>
-
-<!-- Подключаем саму библиотеку Leaflet -->
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-<script>
-    // 1. НАСТРОЙКА ЦЕНТРА И ЗУМА (Поставь свои цифры здесь)
-    var map = L.map('map').setView([48.0, 37.0], 7); 
-
-    // 2. ПОДКЛЮЧАЕМ СЛОЙ ESRI (Спутник)
-    var esriImagery = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-        attribution: 'Tiles &copy; Esri'
-    }).addTo(map);
-
-    // 3. ЗАГРУЗКА ТВОИХ ДАННЫХ
-    // Проверяем, есть ли файл data.json
-    fetch('data.json')
-        .then(function(response) {
-            if (!response.ok) {
-                console.error("Файл data.json не найден! Проверь, что он лежит в репозитории.");
-                return;
-            }
-            return response.json();
-        })
-        .then(function(data) {
-            if (data) {
-                L.geoJSON(data, {
-                    onEachFeature: function (feature, layer) {
-                        // Если в Google Maps ты писал описания к меткам, они появятся тут
-                        if (feature.properties && feature.properties.description) {
-                            layer.bindPopup(feature.properties.description);
-                        } else if (feature.properties && feature.properties.name) {
-                            layer.bindPopup(feature.properties.name);
-                        }
-                    }
-                }).addTo(map);
-                console.log("Данные успешно загружены!");
-            }
-        })
-        .catch(function(error) {
-            console.error("Ошибка в коде или формате JSON:", error);
-        });
-</script>
-
+        // Слой спутника Esri
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Tiles &copy; Esri'
+        }).addTo(map);
+    </script>
 </body>
 </html>
+
 
