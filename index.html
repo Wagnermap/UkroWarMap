@@ -11,7 +11,6 @@
             background: rgba(20, 20, 20, 0.9) !important; 
             color: #fff !important; 
             border: 2px solid #444 !important;
-            font-family: Arial, sans-serif;
             font-size: 13px;
         }
     </style>
@@ -26,102 +25,72 @@
     var map = L.map('map', { center: [48.3, 34.5], zoom: 6, zoomControl: false });
     L.control.zoom({ position: 'topright' }).addTo(map);
 
-    // --- BASEMAP LAYERS ---
-    var googleHybrid = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', { attribution: 'Google' });
-    
-    // Sentinel-2 layer (provided by Esri Living Atlas)
-    var sentinel2 = L.tileLayer('https://tiles.arcgis.com/tiles/P3ePLMYAZzftJ3BN/arcgis/rest/services/Sentinel_2_Views/MapServer/tile/{z}/{y}/{x}', {
-        attribution: 'Sentinel-2 / ESA via Esri',
-        maxNativeZoom: 16 // Sentinel-2 data typically has lower max zoom than commercial imagery
-    });
-
+    // --- Спутниковые слои (Sentinel убран) ---
+    var googleHybrid = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}');
     var esriWithLabels = L.layerGroup([
         L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'),
         L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}.png')
     ]);
-    googleHybrid.addTo(map); // Default basemap
+    googleHybrid.addTo(map);
 
-    // --- OVERLAY LAYERS ---
+    // --- Группы для твоих слоев ---
     var russiaLayer = L.layerGroup().addTo(map);
     var ukraineLayer = L.layerGroup().addTo(map);
     var trenchLayer = L.layerGroup().addTo(map);
     var teethLayer = L.layerGroup().addTo(map);
     var wireLayer = L.layerGroup().addTo(map);
 
-    // --- LAYER CONTROL PANEL ---
-    var baseMaps = {
-        "Google Hybrid": googleHybrid,
-        "Sentinel-2 (Esri)": sentinel2, // New Sentinel-2 layer
-        "Esri + Labels": esriWithLabels
-    };
-
+    // --- Меню управления ---
+    var baseMaps = { "Google Hybrid": googleHybrid, "Esri + Labels": esriWithLabels };
     var overlayMaps = {
         "<b style='color: #ff4d4d;'>Russia</b>": russiaLayer,
-        "<b style='color: #4d94ff;'>Ukraine</b>": ukraineLayer,
+        "<b style='color: #ADD8E6;'>Ukraine</b>": ukraineLayer,
         "<b style='color: #FFA500;'>Trenches</b>": trenchLayer,
         "<b style='color: #ADD8E6;'>Dragon's Teeth</b>": teethLayer,
         "<b style='color: #888;'>Barbed Wire</b>": wireLayer
     };
-
     L.control.layers(baseMaps, overlayMaps, { position: 'topleft', collapsed: false }).addTo(map);
 
-    // --- FETCH DATA ---
-    fetch('data.json').then(res => res.json()).then(data => {
-        L.geoJSON(data, {
-            style: function(feature) {
-                var name = (feature.properties.name || "").toLowerCase();
-                
-                if (name.includes("trench") || name.includes("окоп") || name.includes("ров")) {
-                    return { color: "#FFA500", weight: 3, opacity: 1 };
-                }
-                if (name.includes("teeth") || name.includes("зубы")) {
-                    return { color: "#ADD8E6", weight: 2 }; 
-                }
-                if (name.includes("wire") || name.includes("проволока")) {
-                    return { color: "#777", weight: 2, dashArray: "5, 10" };
-                }
-                if (name.includes("ukraine") || name.includes("синяя") || name.includes("blue")) {
-                    return { fillColor: "#0057b7", fillOpacity: 0.5, weight: 0, stroke: false };
-                }
-                
-                return { fillColor: "#cc0000", fillOpacity: 0.5, weight: 0, stroke: false }; // Default to Russia color
-            },
-            pointToLayer: function(feature, latlng) {
-                var name = (feature.properties.name || "").toLowerCase();
-                
-                if (name.includes("teeth") || name.includes("зубы")) {
-                    return L.circleMarker(latlng, { radius: 3, fillColor: "#ADD8E6", color: "#4d94ff", weight: 1, fillOpacity: 1 });
-                }
-                if (name.includes("ukraine") || name.includes("синяя")) {
-                    return L.circleMarker(latlng, { radius: 5, fillColor: "#0057b7", color: "white", weight: 1, fillOpacity: 0.9 });
-                }
-                return L.circleMarker(latlng, { radius: 5, fillColor: "#cc0000", color: "white", weight: 1, fillOpacity: 0.9 }); // Default to Russia color
-            },
-            onEachFeature: function (feature, layer) {
-                var name = (feature.properties.name || "").toLowerCase();
-                
-                if (name.includes("ukraine") || name.includes("синяя") || name.includes("blue")) { 
-                    layer.addTo(ukraineLayer); 
-                }
-                else if (name.includes("trench") || name.includes("окоп") || name.includes("ров")) { 
-                    layer.addTo(trenchLayer); 
-                }
-                else if (name.includes("teeth") || name.includes("зубы")) { 
-                    layer.addTo(teethLayer); 
-                }
-                else if (name.includes("wire") || name.includes("проволока")) { 
-                    layer.addTo(wireLayer); 
-                }
-                else { 
-                    layer.addTo(russiaLayer); 
-                }
+    // --- Функция для загрузки слоев ---
+    function loadLayer(url, layerGroup, styleOptions, isPoint = false) {
+        fetch(url)
+            .then(res => res.json())
+            .then(data => {
+                L.geoJSON(data, {
+                    style: styleOptions,
+                    pointToLayer: function(feature, latlng) {
+                        if (isPoint) {
+                            return L.circleMarker(latlng, styleOptions);
+                        }
+                    },
+                    onEachFeature: function(feature, layer) {
+                        if (feature.properties && feature.properties.name) {
+                            layer.bindPopup(feature.properties.name);
+                        }
+                    }
+                }).addTo(layerGroup);
+            })
+            .catch(err => console.log("Файл не найден: " + url));
+    }
 
-                if (feature.properties.name) layer.bindPopup(feature.properties.name);
-            }
-        });
-    });
+    // --- ЗАГРУЗКА ВСЕХ ФАЙЛОВ ИЗ ПАПКИ DATA ---
+
+    // 1. Россия (красный) - убедись, что файл russia.geojson там есть
+    loadLayer('data/russia.geojson', russiaLayer, { fillColor: "#cc0000", fillOpacity: 0.5, weight: 0, stroke: false });
+
+    // 2. Украина (светло-синий)
+    loadLayer('data/ukraine.json', ukraineLayer, { fillColor: "#ADD8E6", fillOpacity: 0.5, weight: 0, stroke: false });
+
+    // 3. Окопы/Рвы (оранжевый)
+    loadLayer('data/ditches.geojson', trenchLayer, { color: "#FFA500", weight: 3, opacity: 1 });
+
+    // 4. Зубы дракона (светло-голубые точки)
+    loadLayer('data/teeth.geojson', teethLayer, { radius: 3, fillColor: "#ADD8E6", color: "#4d94ff", weight: 1, fillOpacity: 1 }, true);
+
+    // 5. Проволока (серый пунктир)
+    loadLayer('data/wire.geojson', wireLayer, { color: "#888", weight: 2, dashArray: "5, 10" });
+
 </script>
 </body>
 </html>
-
 
