@@ -11,8 +11,8 @@
             background: rgba(20, 20, 20, 0.9) !important; 
             color: #fff !important; 
             border: 2px solid #444 !important;
-            font-size: 13px;
             font-family: Arial, sans-serif;
+            font-size: 13px;
         }
     </style>
 </head>
@@ -23,28 +23,35 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
-    // 1. Инициализация карты
     var map = L.map('map', { center: [48.3, 34.5], zoom: 6, zoomControl: false });
     L.control.zoom({ position: 'topright' }).addTo(map);
 
-    // 2. Спутники
-    var googleHybrid = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}');
+    // --- BASEMAP LAYERS ---
+    var googleHybrid = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', { attribution: 'Google' });
+    
+    // Sentinel-2 layer (provided by Esri Living Atlas)
+    var sentinel2 = L.tileLayer('https://tiles.arcgis.com/tiles/P3ePLMYAZzftJ3BN/arcgis/rest/services/Sentinel_2_Views/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Sentinel-2 / ESA via Esri',
+        maxNativeZoom: 16 // Sentinel-2 data typically has lower max zoom than commercial imagery
+    });
+
     var esriWithLabels = L.layerGroup([
         L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'),
         L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}.png')
     ]);
-    googleHybrid.addTo(map);
+    googleHybrid.addTo(map); // Default basemap
 
-    // 3. Создаем группы слоев для объектов
+    // --- OVERLAY LAYERS ---
     var russiaLayer = L.layerGroup().addTo(map);
     var ukraineLayer = L.layerGroup().addTo(map);
     var trenchLayer = L.layerGroup().addTo(map);
     var teethLayer = L.layerGroup().addTo(map);
     var wireLayer = L.layerGroup().addTo(map);
 
-    // 4. Панель управления слева
+    // --- LAYER CONTROL PANEL ---
     var baseMaps = {
         "Google Hybrid": googleHybrid,
+        "Sentinel-2 (Esri)": sentinel2, // New Sentinel-2 layer
         "Esri + Labels": esriWithLabels
     };
 
@@ -58,12 +65,12 @@
 
     L.control.layers(baseMaps, overlayMaps, { position: 'topleft', collapsed: false }).addTo(map);
 
-    // 5. Загрузка и обработка данных из data.json
+    // --- FETCH DATA ---
     fetch('data.json').then(res => res.json()).then(data => {
         L.geoJSON(data, {
             style: function(feature) {
                 var name = (feature.properties.name || "").toLowerCase();
-                // Определение стиля по ключевым словам (понимает и русские, и английские)
+                
                 if (name.includes("trench") || name.includes("окоп") || name.includes("ров")) {
                     return { color: "#FFA500", weight: 3, opacity: 1 };
                 }
@@ -77,27 +84,22 @@
                     return { fillColor: "#0057b7", fillOpacity: 0.5, weight: 0, stroke: false };
                 }
                 
-                // Всё остальное (включая пустые названия) - КРАСНОЕ (Russia)
-                return { fillColor: "#cc0000", fillOpacity: 0.5, weight: 0, stroke: false };
+                return { fillColor: "#cc0000", fillOpacity: 0.5, weight: 0, stroke: false }; // Default to Russia color
             },
             pointToLayer: function(feature, latlng) {
                 var name = (feature.properties.name || "").toLowerCase();
                 
-                // Точки для Dragon's Teeth
                 if (name.includes("teeth") || name.includes("зубы")) {
                     return L.circleMarker(latlng, { radius: 3, fillColor: "#ADD8E6", color: "#4d94ff", weight: 1, fillOpacity: 1 });
                 }
-                // Точки для Ukraine
                 if (name.includes("ukraine") || name.includes("синяя")) {
                     return L.circleMarker(latlng, { radius: 5, fillColor: "#0057b7", color: "white", weight: 1, fillOpacity: 0.9 });
                 }
-                // Точки для Russia (по умолчанию)
-                return L.circleMarker(latlng, { radius: 5, fillColor: "#cc0000", color: "white", weight: 1, fillOpacity: 0.9 });
+                return L.circleMarker(latlng, { radius: 5, fillColor: "#cc0000", color: "white", weight: 1, fillOpacity: 0.9 }); // Default to Russia color
             },
             onEachFeature: function (feature, layer) {
                 var name = (feature.properties.name || "").toLowerCase();
                 
-                // Сортировка объектов по галочкам в меню
                 if (name.includes("ukraine") || name.includes("синяя") || name.includes("blue")) { 
                     layer.addTo(ukraineLayer); 
                 }
@@ -111,14 +113,15 @@
                     layer.addTo(wireLayer); 
                 }
                 else { 
-                    layer.addTo(russiaLayer); // Все остальные объекты добавляются в слой Russia
+                    layer.addTo(russiaLayer); 
                 }
 
-                if (feature.properties.name) { layer.bindPopup(feature.properties.name); }
+                if (feature.properties.name) layer.bindPopup(feature.properties.name);
             }
         });
     });
 </script>
 </body>
 </html>
+
 
