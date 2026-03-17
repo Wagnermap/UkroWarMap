@@ -1,67 +1,72 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Моя карта со слоями</title>
+    <title>Интерактивная карта</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        body, html { margin: 0; padding: 0; height: 100%; }
-        #map { width: 100%; height: 100vh; }
+        body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; }
+        #map { width: 100%; height: 100vh; background: #000; }
     </style>
 </head>
 <body>
-    <div id="map"></div>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script>
-        // 1. Установка центра карты и зума
-        var map = L.map('map').setView([48.0, 37.0], 7); 
 
-        // 2. Слой спутника Esri (земля)
-        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-            attribution: 'Tiles &copy; Esri'
-        }).addTo(map);
+<div id="map"></div>
 
-        // 3. Загрузка твоих меток из файла data.json
-        fetch('data.json')
-            .then(function(response) {
-                if (!response.ok) {
-                    throw new Error("Файл data.json не найден");
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+    // 1. Инициализация карты (Центр на Украине, зум 6)
+    var map = L.map('map').setView([48.5, 31.2], 6); 
+
+    // 2. Слой спутника Esri
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles &copy; Esri'
+    }).addTo(map);
+
+    // 3. Загрузка данных из data.json
+    fetch('data.json')
+        .then(function(response) {
+            if (!response.ok) throw new Error("Файл data.json не найден");
+            return response.json();
+        })
+        .then(function(data) {
+            L.geoJSON(data, {
+                // Стиль для линий и полигонов (зон)
+                style: function(feature) {
+                    return {
+                        fillColor: "red",   // Красная заливка
+                        fillOpacity: 0.6,   // Прозрачность 60%
+                        color: "red",       // Цвет контура (тоже красный)
+                        weight: 0,          // Толщина линии 0 (убирает границы)
+                        stroke: false       // Полностью отключает отрисовку линий
+                    };
+                },
+                // Стиль для точек (вместо синих капель будут красные кружки)
+                pointToLayer: function(feature, latlng) {
+                    return L.circleMarker(latlng, {
+                        radius: 6,          // Размер точки
+                        fillColor: "red",
+                        color: "#fff",      // Тонкая белая обводка, чтобы точки не сливались
+                        weight: 0.5,
+                        fillOpacity: 0.9
+                    });
+                },
+                // Всплывающее окно при клике
+                onEachFeature: function (feature, layer) {
+                    if (feature.properties && feature.properties.name) {
+                        layer.bindPopup("<b>" + feature.properties.name + "</b>");
+                    }
                 }
-                return response.json();
-            })
-            .then(function(data) {
-                // Добавляем данные на карту
-                               L.geoJSON(data, {
-            // 1. Настройка стиля для ЛИНИЙ и ПОЛИГОНОВ
-            style: function(feature) {
-                return {
-                    color: "red",       // Цвет линий
-                    fillColor: "red",   // Цвет заливки внутри
-                    fillOpacity: 0.5,   // Прозрачность (от 0 до 1)
-                    weight: 0,          // Толщина линии контура (0 — убирает границу)
-                    stroke: false       // Полностью отключает отрисовку границ
-                };
-            },
-            // 2. Настройка стиля для ТОЧЕК (маркеров)
-            pointToLayer: function(feature, latlng) {
-                return L.circleMarker(latlng, {
-                    radius: 7,          // Размер точки
-                    fillColor: "red",   // Цвет точки
-                    color: "red",       // Цвет обводки точки
-                    weight: 0,          // Убираем обводку точки
-                    fillOpacity: 0.8    // Прозрачность точки
-                });
-            },
-            // 3. Всплывающие окна (оставляем как было)
-            onEachFeature: function (feature, layer) {
-                if (feature.properties && feature.properties.name) {
-                    layer.bindPopup(feature.properties.name);
-                }
-            }
-        }).addTo(map);
+            }).addTo(map);
+            console.log("Данные успешно загружены!");
+        })
+        .catch(function(error) {
+            console.error("Ошибка:", error);
+        });
+</script>
 
+</body>
 </html>
-
-
 
 
