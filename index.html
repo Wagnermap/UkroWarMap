@@ -2,13 +2,17 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Карта</title>
+    <title>Карта с названиями и фильтром</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #000; }
         #map { width: 100%; height: 100vh; }
-        /* Кнопка слоев будет заметнее */
-        .leaflet-control-layers { border: 2px solid rgba(0,0,0,0.2); background-clip: padding-box; }
+        /* Делаем переключатель слева чуть больше и красивее */
+        .leaflet-control-layers { 
+            background: rgba(34, 34, 34, 0.9) !important; 
+            color: #fff !important; 
+            border: 1px solid #7a2af0 !important;
+        }
     </style>
 </head>
 <body>
@@ -18,29 +22,59 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
-    // 1. Создаем карту
-    var map = L.map('map').setView([48.5, 31.2], 6);
+    // 1. Инициализация карты
+    var map = L.map('map', {
+        center: [48.5, 31.2],
+        zoom: 6,
+        zoomControl: false // Скроем стандартные кнопки +-, чтобы не мешали переключателю
+    });
 
-    // 2. Определяем слои спутника
+    // 2. Добавляем кнопки зума в другой угол (справа), чтобы слева был только переключатель
+    L.control.zoom({ position: 'topright' }).addTo(map);
+
+    // 3. ОПРЕДЕЛЯЕМ СЛОИ ПОДЛОЖКИ (Base Maps)
+    
+    // Спутник Google С НАЗВАНИЯМИ (Гибрид)
+    var googleHybrid = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+        attribution: 'Google Hybrid'
+    });
+
+    // Обычный спутник Google (без названий)
     var googleSat = L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
         attribution: 'Google Satellite'
     });
 
-    var esriSat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-        attribution: 'Esri Satellite'
+    // Дополнительный слой ТОЛЬКО границ и названий (фиолетовый эффект создадим поверх)
+    var labelsLayer = L.tileLayer('https://stamen-tiles.a.ssl.fastly.net/toner-labels/{z}/{x}/{y}.png', {
+        opacity: 0.7,
+        pane: 'markerPane' // Чтобы названия были поверх красных зон
     });
 
-    // 3. Сразу добавляем Google на карту, чтобы она не была пустой
-    googleSat.addTo(map);
+    // 4. ГРУППА ДЛЯ ТВОИХ ДАННЫХ (Overlay)
+    var myDataLayer = L.layerGroup();
 
-    // 4. Добавляем переключатель слоев в угол (ТЕПЕРЬ ОН ТОЧНО БУДЕТ)
-    var baseLayers = {
-        "Google (Новый)": googleSat,
-        "Esri (Старый)": esriSat
+    // 5. ДОБАВЛЯЕМ ВСЁ НА КАРТУ ПО УМОЛЧАНИЮ
+    googleHybrid.addTo(map);
+    myDataLayer.addTo(map);
+
+    // 6. НАСТРОЙКА ПЕРЕКЛЮЧАТЕЛЯ СЛЕВА
+    var baseMaps = {
+        "Спутник + Названия": googleHybrid,
+        "Чистый спутник": googleSat
     };
-    L.control.layers(baseLayers).addTo(map);
 
-    // 5. Загружаем данные из data.json
+    var overlayMaps = {
+        "<span style='color: #ff4545; font-weight: bold;'>Мои красные зоны</span>": myDataLayer,
+        "<span style='color: #7a2af0;'>Доп. границы</span>": labelsLayer
+    };
+
+    // position: 'topleft' ставит кнопку СЛЕВА
+    L.control.layers(baseMaps, overlayMaps, { 
+        position: 'topleft', 
+        collapsed: false // Сразу развернуто, чтобы было видно галочки
+    }).addTo(map);
+
+    // 7. ЗАГРУЗКА ДАННЫХ ИЗ data.json
     fetch('data.json')
         .then(function(res) { return res.json(); })
         .then(function(data) {
@@ -48,31 +82,32 @@
                 style: function() {
                     return {
                         fillColor: "red",
-                        fillOpacity: 0.6,
-                        color: "red",
-                        weight: 0,
-                        stroke: false
+                        fillOpacity: 0.5,
+                        weight: 1.5,
+                        color: "#7a2af0", // ВОТ ТВОЯ ФИОЛЕТОВАЯ ЛИНИЯ ГРАНИЦЫ для твоих зон
+                        stroke: true
                     };
                 },
                 pointToLayer: function(feature, latlng) {
                     return L.circleMarker(latlng, {
                         radius: 6,
                         fillColor: "red",
-                        color: "#fff",
-                        weight: 1,
+                        color: "#7a2af0", // Фиолетовая обводка точек
+                        weight: 2,
                         fillOpacity: 0.9
                     });
                 },
                 onEachFeature: function (feature, layer) {
                     if (feature.properties && feature.properties.name) {
-                        layer.bindPopup(feature.properties.name);
+                        layer.bindPopup("<b>" + feature.properties.name + "</b>");
                     }
                 }
-            }).addTo(map);
+            }).addTo(myDataLayer); // Добавляем не прямо на карту, а в группу myDataLayer
         })
         .catch(function(err) {
-            console.log("Данные из data.json не загрузились, но карта работает.");
+            console.log("Ошибка загрузки data.json");
         });
+
 </script>
 
 </body>
