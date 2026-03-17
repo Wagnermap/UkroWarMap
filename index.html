@@ -1,12 +1,17 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Интерактивная карта</title>
+    <title>Интерактивная спутниковая карта</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
+        /* Карта на весь экран */
         body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; }
         #map { width: 100%; height: 100vh; background: #000; }
+        
+        /* Стиль для всплывающих окон */
+        .leaflet-popup-content-wrapper { background: #333; color: #fff; border-radius: 5px; }
+        .leaflet-popup-tip { background: #333; }
     </style>
 </head>
 <body>
@@ -16,15 +21,34 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
-    // 1. Инициализация карты (Центр на Украине, зум 6)
-    var map = L.map('map').setView([48.5, 31.2], 6); 
+    // 1. Настройка карты (Центр и начальный зум)
+    var map = L.map('map').setView([48.5, 31.2], 6);
 
-    // 2. Слой спутника Esri
-    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-        attribution: 'Tiles &copy; Esri'
-    }).addTo(map);
+    // 2. Создаем слои спутника от разных сервисов
+    var esri = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Esri'
+    });
 
-    // 3. Загрузка данных из data.json
+    var google = L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+        attribution: 'Google Satellite'
+    });
+
+    var yandex = L.tileLayer('https://sat01.maps.yandex.net/tiles?l=sat&v=3.440.0&x={x}&y={y}&z={z}', {
+        attribution: 'Yandex Satellite'
+    });
+
+    // 3. Добавляем Google по умолчанию (он обычно самый новый)
+    google.addTo(map);
+
+    // 4. Добавляем кнопку переключения слоев в правый верхний угол
+    var baseMaps = {
+        "Google (Обновленный)": google,
+        "Yandex (Четкий)": yandex,
+        "Esri (Стандартный)": esri
+    };
+    L.control.layers(baseMaps).addTo(map);
+
+    // 5. Загрузка данных из твоего файла data.json
     fetch('data.json')
         .then(function(response) {
             if (!response.ok) throw new Error("Файл data.json не найден");
@@ -32,41 +56,39 @@
         })
         .then(function(data) {
             L.geoJSON(data, {
-                // Стиль для линий и полигонов (зон)
+                // Стиль для зон и линий (красный, без границ)
                 style: function(feature) {
                     return {
-                        fillColor: "red",   // Красная заливка
-                        fillOpacity: 0.6,   // Прозрачность 60%
-                        color: "red",       // Цвет контура (тоже красный)
-                        weight: 0,          // Толщина линии 0 (убирает границы)
-                        stroke: false       // Полностью отключает отрисовку линий
+                        fillColor: "red",
+                        fillOpacity: 0.6,
+                        color: "red",
+                        weight: 0,
+                        stroke: false
                     };
                 },
-                // Стиль для точек (вместо синих капель будут красные кружки)
+                // Стиль для точек (красные круги)
                 pointToLayer: function(feature, latlng) {
                     return L.circleMarker(latlng, {
-                        radius: 6,          // Размер точки
+                        radius: 6,
                         fillColor: "red",
-                        color: "#fff",      // Тонкая белая обводка, чтобы точки не сливались
+                        color: "#fff",
                         weight: 0.5,
                         fillOpacity: 0.9
                     });
                 },
-                // Всплывающее окно при клике
+                // Всплывающее описание при клике
                 onEachFeature: function (feature, layer) {
                     if (feature.properties && feature.properties.name) {
                         layer.bindPopup("<b>" + feature.properties.name + "</b>");
                     }
                 }
             }).addTo(map);
-            console.log("Данные успешно загружены!");
+            console.log("Данные загружены успешно!");
         })
         .catch(function(error) {
-            console.error("Ошибка:", error);
+            console.error("Ошибка загрузки данных:", error);
         });
 </script>
 
 </body>
 </html>
-
-
