@@ -7,100 +7,48 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body, html {
-            margin: 0;
-            padding: 0;
-            height: 100%;
-            overflow: hidden;
-            background: #000;
-            font-family: Arial, sans-serif;
+            margin: 0; padding: 0; height: 100%; overflow: hidden; background: #000; font-family: Arial, sans-serif;
         }
-        #map {
-            width: 100%;
-            height: 100vh;
-        }
-        /* Styles for the layer control */
-        .leaflet-control-layers {
-            background: rgba(20, 20, 20, 0.9) !important;
-            color: #fff !important;
-            border: 2px solid #444 !important;
-            border-radius: 5px;
-            box-shadow: 0 1px 5px rgba(0,0,0,0.4);
-        }
-        .leaflet-control-layers label {
-            color: #fff;
-        }
-        .leaflet-control-layers-separator {
-            background-color: #555 !important;
-        }
+        #map { width: 100%; height: 100vh; }
 
-        /* Styles for the custom search control */
+        /* Layer Control Styles */
+        .leaflet-control-layers {
+            background: rgba(20, 20, 20, 0.9) !important; color: #fff !important; border: 2px solid #444 !important;
+            border-radius: 5px; box-shadow: 0 1px 5px rgba(0,0,0,0.4);
+        }
+        .leaflet-control-layers label { color: #fff; }
+        .leaflet-control-layers-separator { background-color: #555 !important; }
+
+        /* Coordinate Search Control Styles */
         .leaflet-control.coord-search-control {
-            position: absolute;
-            top: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 1000;
-            background: rgba(20, 20, 20, 0.9);
-            padding: 8px 12px;
-            border-radius: 5px;
-            box-shadow: 0 1px 5px rgba(0,0,0,0.4);
-            display: flex;
-            align-items: center;
-            gap: 8px;
+            position: absolute; top: 10px; left: 50%; transform: translateX(-50%); z-index: 1000;
+            background: rgba(20, 20, 20, 0.9); padding: 8px 12px; border-radius: 5px;
+            box-shadow: 0 1px 5px rgba(0,0,0,0.4); display: flex; align-items: center; gap: 8px;
         }
         .coord-search-control input {
-            background: #333;
-            border: 1px solid #555;
-            color: #eee;
-            padding: 6px 10px;
-            border-radius: 3px;
-            width: 180px;
-            max-width: 60vw;
-            font-size: 0.9em;
+            background: #333; border: 1px solid #555; color: #eee; padding: 6px 10px; border-radius: 3px;
+            width: 180px; max-width: 60vw; font-size: 0.9em;
         }
         .coord-search-control button {
-            background: #4CAF50;
-            color: white;
-            border: none;
-            padding: 7px 12px;
-            border-radius: 3px;
-            cursor: pointer;
-            font-size: 0.9em;
-            transition: background 0.2s;
+            background: #4CAF50; color: white; border: none; padding: 7px 12px; border-radius: 3px;
+            cursor: pointer; font-size: 0.9em; transition: background 0.2s;
         }
-        .coord-search-control button:hover {
-            background: #45a049;
-        }
+        .coord-search-control button:hover { background: #45a049; }
 
-        /* Styles for the coordinate popup */
+        /* Coordinate Popup Styles */
         .leaflet-popup-content-wrapper {
-            background: rgba(20, 20, 20, 0.9) !important;
-            color: #fff !important;
-            border-radius: 5px;
-
-            box-shadow: 0 1px 5px rgba(0,0,0,0.4);
+            background: rgba(20, 20, 20, 0.9) !important; color: #fff !important;
+            border-radius: 5px; box-shadow: 0 1px 5px rgba(0,0,0,0.4);
         }
-        .leaflet-popup-tip {
-            background: rgba(20, 20, 20, 0.9) !important;
-        }
+        .leaflet-popup-tip { background: rgba(20, 20, 20, 0.9) !important; }
 
-        /* Responsive adjustments for mobile devices */
+        /* Responsive Adjustments */
         @media (max-width: 768px) {
-            .leaflet-control-layers {
-                top: 55px !important;
-                left: 10px !important;
-            }
+            .leaflet-control-layers { top: 55px !important; left: 10px !important; }
             .coord-search-control {
-                width: calc(100% - 20px);
-                left: 10px;
-                transform: translateX(0);
-                top: 10px;
-                box-sizing: border-box;
+                width: calc(100% - 20px); left: 10px; transform: translateX(0); top: 10px; box-sizing: border-box;
             }
-            .coord-search-control input {
-                flex-grow: 1;
-                width: auto;
-            }
+            .coord-search-control input { flex-grow: 1; width: auto; }
         }
     </style>
 </head>
@@ -108,23 +56,19 @@
 <div id="map"></div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<!-- Using jQuery for easy JSON loading -->
 <script src="https://unpkg.com/jquery@3.7.1/dist/jquery.min.js"></script>
 <script>
     var map = L.map('map', { center: [48.3, 34.5], zoom: 6, zoomControl: false });
     L.control.zoom({ position: 'topright' }).addTo(map);
 
-    // Sentinel-2 Cloudless Base Layer from EOX (composite imagery)
+    // Sentinel-2 Cloudless Base Layer
     var sentinel2Cloudless = L.tileLayer(
         'https://tiles.maps.eox.at/wmts?service=WMTS&request=GetTile&version=1.0.0&layer=s2cloudless&style=default&format=image/jpeg&tileMatrixSet=PM&tileMatrix={z}&tileRow={y}&tileCol={x}',
-        {
-            maxZoom: 19,
-            attribution: '&copy; <a href="https://eox.at/">EOX IT Services GmbH</a>, Contains <a href="http://www.esa.int/Our_Activities/Observing_the_Earth/Copernicus/Sentinel-2">Copernicus Sentinel data</a>'
-        }
+        { maxZoom: 19, attribution: '&copy; <a href="https://eox.at/">EOX IT Services GmbH</a>, Contains <a href="http://www.esa.int/Our_Activities/Observing_the_Earth/Copernicus/Sentinel-2">Copernicus Sentinel data</a>' }
     );
-    sentinel2Cloudless.addTo(map); // Add Sentinel-2 as the default base layer
+    sentinel2Cloudless.addTo(map);
 
-    // Overlay layers for map objects
+    // Layer groups for map objects
     var Russia = L.layerGroup().addTo(map);
     var Ukraine = L.layerGroup().addTo(map);
     var Trench = L.layerGroup().addTo(map);
@@ -132,9 +76,7 @@
     var Wire = L.layerGroup().addTo(map);
 
     // Layer control
-    var baseMaps = {
-        "Sentinel-2 Cloudless": sentinel2Cloudless
-    };
+    var baseMaps = { "Sentinel-2 Cloudless": sentinel2Cloudless };
     var overlayMaps = {
         "<b style='color: #ff4d4d;'>Russia (Default)</b>": Russia,
         "<b style='color: #4d94ff;'>Ukraine</b>": Ukraine,
@@ -144,7 +86,7 @@
     };
     L.control.layers(baseMaps, overlayMaps, { position: 'topleft', collapsed: false }).addTo(map);
 
-    // --- Feature: Coordinate Search Control ---
+    // Coordinate Search Control
     var CoordSearchControl = L.Control.extend({
         onAdd: function(map) {
             var div = L.DomUtil.create('div', 'leaflet-control coord-search-control');
@@ -152,115 +94,92 @@
                 <input type="text" id="coordInput" placeholder="Latitude, Longitude (e.g., 48.5, 34.5)">
                 <button id="searchCoordBtn">Search</button>
             `;
-
-            L.DomEvent.disableClickPropagation(div);
-            L.DomEvent.disableScrollPropagation(div);
-
+            L.DomEvent.disableClickPropagation(div); L.DomEvent.disableScrollPropagation(div);
             div.querySelector('#searchCoordBtn').addEventListener('click', function() {
                 var input = div.querySelector('#coordInput').value;
                 var parts = input.split(',').map(s => parseFloat(s.trim()));
-
                 if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
-                    var lat = parts[0];
-                    var lon = parts[1];
+                    var lat = parts[0]; var lon = parts[1];
                     if (lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180) {
                         map.setView([lat, lon], 12);
-                        if (this._searchMarker) {
-map.removeLayer(this._searchMarker);
-                        }
-                        this._searchMarker = L.marker([lat, lon]).addTo(map)
-                            .bindPopup(`Coordinates: ${lat.toFixed(4)}, ${lon.toFixed(4)}`).openPopup();
-                    } else {
-                        alert('Invalid coordinates. Latitude must be between -90 and 90, Longitude between -180 and 180.');
-                    }
-                } else {
-                    alert('Please enter coordinates in "Latitude, Longitude" format.');
-                }
+                        if (this._searchMarker) map.removeLayer(this._searchMarker);
+                        this._searchMarker = L.marker([lat, lon]).addTo(map).bindPopup(`Coordinates: ${lat.toFixed(4)}, ${lon.toFixed(4)}`).openPopup();
+                    } else { alert('Invalid coordinates. Latitude must be between -90 and 90, Longitude between -180 and 180.'); }
+                } else { alert('Please enter coordinates in "Latitude, Longitude" format.'); }
             });
-
             return div;
         },
-        onRemove: function(map) {
-            // Cleanup if necessary
-        }
+        onRemove: function(map) {}
     });
     new CoordSearchControl().addTo(map);
 
-    // --- Feature: Display Coordinates on Long Press / Right Click ---
+    // Display Coordinates on Long Press / Right Click
     map.on('contextmenu', function(e) {
-        var lat = e.latlng.lat.toFixed(4);
-        var lon = e.latlng.lng.toFixed(4);
-        L.popup()
-            .setLatLng(e.latlng)
-            .setContent(`<b>Coordinates:</b><br>${lat}, ${lon}`)
-            .openOn(map);
+        var lat = e.latlng.lat.toFixed(4); var lon = e.latlng.lng.toFixed(4);
+        L.popup().setLatLng(e.latlng).setContent(`<b>Coordinates:</b><br>${lat}, ${lon}`).openOn(map);
     });
-
-    // --- Load and Display GeoJSON Data ---
-    $.getJSON("data.json", function(data) {
-        L.geoJSON(data, {
-            style: function(feature) {
-                var name = (feature.properties.name || "").toLowerCase();
-
-                if (name.includes("trench") || name.includes("окоп") || name.includes("ров")) {
-                    return { color: "#FFA500", weight: 3, opacity: 1 };
+// Function to load GeoJSON data from a specific URL
+    function loadGeoJson(url, layerGroup, styleFunction, pointToLayerFunction, onEachFeatureFunction) {
+        $.getJSON(url, function(data) {
+            L.geoJSON(data, {
+                style: styleFunction,
+                pointToLayer: pointToLayerFunction,
+                onEachFeature: function(feature, layer) {
+                    // Common onEachFeature logic: add to specified layerGroup and bind popup
+                    layer.addTo(layerGroup);
+                    if (feature.properties.name) {
+                        layer.bindPopup(feature.properties.name);
+                    }
+                    // Custom onEachFeature logic (if any) can be passed here
+                    if (onEachFeatureFunction) {
+                        onEachFeatureFunction(feature, layer);
+                    }
                 }
-                if (name.includes("teeth") || name.includes("зубы")) {
-                    return { color: "#ADD8E6", weight: 2, opacity: 1 };
-                }
-                if (name.includes("wire") || name.includes("проволока")) {
-                    return { color: "#777", weight: 2, dashArray: "5, 10", opacity: 0.8 };
-                }
-                if (name.includes("ukraine") || name.includes("синяя") || name.includes("blue")) {
-                    return { fillColor: "#0057b7", fillOpacity: 0.4, weight: 1, color: "#0057b7", opacity: 0.8 };
-                }
-
-                // Default style for Russia / other unspecified features (polygons)
-                return { fillColor: "#cc0000", fillOpacity: 0.4, weight: 1, color: "#cc0000", opacity: 0.8 };
-            },
-            pointToLayer: function(feature, latlng) {
-                var name = (feature.properties.name || "").toLowerCase();
-                // Point markers for Dragon's Teeth (if represented as points)
-                if (name.includes("teeth") || name.includes("зубы")) {
-                    return L.circleMarker(latlng, { radius: 3, fillColor: "#ADD8E6", color: "#4d94ff", weight: 1, fillOpacity: 1 });
-                }
-                // Point markers for Ukraine (if points represent Ukrainian objects)
-                if (name.includes("ukraine") || name.includes("синяя")) {
-                    return L.circleMarker(latlng, { radius: 5, fillColor: "#0057b7", color: "white", weight: 1, fillOpacity: 0.9 });
-                }
-                // Default point markers for Russia / other unspecified features
-                return L.circleMarker(latlng, { radius: 5, fillColor: "#cc0000", color: "white", weight: 1, fillOpacity: 0.9 });
-            },
-            onEachFeature: function (feature, layer) {
-                var name = (feature.properties.name || "").toLowerCase();
-
-                // Sort features into their respective layers
-                if (name.includes("ukraine") || name.includes("синяя") || name.includes("blue")) {
-                    layer.addTo(Ukraine);
-                }
-                else if (name.includes("trench") || name.includes("окоп") || name.includes("ров")) {
-                    layer.addTo(Trench);
-}
-                else if (name.includes("teeth") || name.includes("зубы")) {
-                    layer.addTo(Teeth);
-                }
-                else if (name.includes("wire") || name.includes("проволока")) {
-                    layer.addTo(Wire);
-                }
-                else {
-                    layer.addTo(Russia);
-                }
-
-                if (feature.properties.name) {
-                    layer.bindPopup(feature.properties.name);
-                }
-            }
+            });
+        }).fail(function(jqxhr, textStatus, error) {
+            var err = textStatus + ", " + error;
+            console.error(`Error loading ${url}: ${err}`);
+            alert(`Error loading ${url}: ${err}. Ensure the file exists and is correctly formatted.`);
         });
-    }).fail(function(jqxhr, textStatus, error) {
-        var err = textStatus + ", " + error;
-        console.error("Request Failed: " + err);
-        alert("Error loading data.json: " + err + ". Ensure the file exists and is correctly formatted.");
-    });
+    }
+
+    // Define style and pointToLayer functions (kept separate for clarity)
+    function featureStyle(feature) {
+        var name = (feature.properties.name || "").toLowerCase();
+        if (name.includes("trench") || name.includes("окоп") || name.includes("ров")) return { color: "#FFA500", weight: 3, opacity: 1 };
+        if (name.includes("teeth") || name.includes("зубы")) return { color: "#ADD8E6", weight: 2, opacity: 1 };
+        if (name.includes("wire") || name.includes("проволока")) return { color: "#777", weight: 2, dashArray: "5, 10", opacity: 0.8 };
+        if (name.includes("ukraine") || name.includes("синяя") || name.includes("blue")) return { fillColor: "#0057b7", fillOpacity: 0.4, weight: 1, color: "#0057b7", opacity: 0.8 };
+        // Default for Russia / other unspecified features (polygons)
+        return { fillColor: "#cc0000", fillOpacity: 0.4, weight: 1, color: "#cc0000", opacity: 0.8 };
+    }
+
+    function featurePointToLayer(feature, latlng) {
+        var name = (feature.properties.name || "").toLowerCase();
+        if (name.includes("teeth") || name.includes("зубы")) return L.circleMarker(latlng, { radius: 3, fillColor: "#ADD8E6", color: "#4d94ff", weight: 1, fillOpacity: 1 });
+        if (name.includes("ukraine") || name.includes("синяя")) return L.circleMarker(latlng, { radius: 5, fillColor: "#0057b7", color: "white", weight: 1, fillOpacity: 0.9 });
+        // Default points
+        return L.circleMarker(latlng, { radius: 5, fillColor: "#cc0000", color: "white", weight: 1, fillOpacity: 0.9 });
+    }
+
+    // Custom onEachFeature to sort into layers
+    function sortIntoLayers(feature, layer) {
+        var name = (feature.properties.name || "").toLowerCase();
+        if (name.includes("ukraine") || name.includes("синяя") || name.includes("blue")) { layer.addTo(Ukraine); }
+        else if (name.includes("trench") || name.includes("окоп") || name.includes("ров")) { layer.addTo(Trench); }
+        else if (name.includes("teeth") || name.includes("зубы")) { layer.addTo(Teeth); }
+        else if (name.includes("wire") || name.includes("проволока")) { layer.addTo(Wire); }
+        else { layer.addTo(Russia); } // Default to Russia layer
+    }
+
+    // Load GeoJSON data from separate files in 'data' folder
+    loadGeoJson("data/ukraine.json", Ukraine, featureStyle, featurePointToLayer, sortIntoLayers);
+    loadGeoJson("data/russia.json", Russia, featureStyle, featurePointToLayer, sortIntoLayers);
+    loadGeoJson("data/trenches.json", Trench, featureStyle, featurePointToLayer, sortIntoLayers);
+    loadGeoJson("data/teeth.json", Teeth,
+                featureStyle, featurePointToLayer, sortIntoLayers);
+    loadGeoJson("data/wire.json", Wire, featureStyle, featurePointToLayer, sortIntoLayers);
+
 </script>
 </body>
 </html>
