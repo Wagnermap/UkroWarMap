@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <title>Военная Карта</title>
-    <!-- Убедитесь, что viewport настроен правильно для мобильных -->
+    <!-- Настройка viewport для корректного отображения на мобильных устройствах -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <!-- Подключение Leaflet CSS -->
+    <!-- Подключение CSS Leaflet -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         /* --- CSS Стили --- */
@@ -27,87 +27,87 @@
             /* Важно: leaflet.js требует, чтобы родительские элементы имели размеры */
         }
 
-        /* Стили для контрола слоев Leaflet */
+        /* Стили для контрола слоев Leaflet (левый верхний угол) */
         .leaflet-control-layers {
-            background: rgba(20, 20, 20, 0.9) !important;
-            color: #fff !important;
-            border: 2px solid #444 !important;
-            border-radius: 5px;
-            box-shadow: 0 1px 5px rgba(0,0,0,0.4);
+            background: rgba(20, 20, 20, 0.9) !important; /* Полупрозрачный темный фон */
+            color: #fff !important; /* Белый текст */
+            border: 2px solid #444 !important; /* Темная рамка */
+            border-radius: 5px; /* Скругленные углы */
+            box-shadow: 0 1px 5px rgba(0,0,0,0.4); /* Тень */
         }
         .leaflet-control-layers label {
-            color: #fff;
+            color: #fff; /* Белый цвет для текста меток */
         }
         .leaflet-control-layers-separator {
-            background-color: #555 !important;
+            background-color: #555 !important; /* Цвет разделителя */
         }
 
-        /* Стили для контрола поиска координат */
+        /* Стили для контрола поиска координат (сверху по центру) */
         .leaflet-control.coord-search-control {
-            position: absolute;
-            top: 10px;
-            left: 50%;
-            transform: translateX(-50%); /* Центрирование */
-            z-index: 1000;
-            background: rgba(20, 20, 20, 0.9);
-            padding: 8px 12px;
-            border-radius: 5px;
-            box-shadow: 0 1px 5px rgba(0,0,0,0.4);
-            display: flex;
-            align-items: center;
-            gap: 8px;
+            position: absolute; /* Абсолютное позиционирование */
+            top: 10px; /* Отступ сверху */
+            left: 50%; /* На 50% от левого края */
+            transform: translateX(-50%); /* Центрирование по горизонтали */
+            z-index: 1000; /* Поверх всех других элементов */
+            background: rgba(20, 20, 20, 0.9); /* Полупрозрачный темный фон */
+            padding: 8px 12px; /* Внутренние отступы */
+            border-radius: 5px; /* Скругленные углы */
+            box-shadow: 0 1px 5px rgba(0,0,0,0.4); /* Тень */
+            display: flex; /* Используем flexbox для выравнивания элементов внутри */
+            align-items: center; /* Выравнивание по центру по вертикали */
+            gap: 8px; /* Расстояние между элементами (поле ввода и кнопка) */
         }
         .coord-search-control input {
-            background: #333;
-            border: 1px solid #555;
-            color: #eee;
-            padding: 6px 10px;
-            border-radius: 3px;
-            width: 180px;
-            max-width: 60vw;
-            font-size: 0.9em;
+            background: #333; /* Темный фон поля ввода */
+            border: 1px solid #555; /* Темная рамка */
+            color: #eee; /* Светлый текст */
+            padding: 6px 10px; /* Внутренние отступы */
+            border-radius: 3px; /* Скругленные углы */
+            width: 180px; /* Фиксированная ширина */
+            max-width: 60vw; /* Максимальная ширина для адаптивности */
+            font-size: 0.9em; /* Размер шрифта */
         }
         .coord-search-control button {
-            background: #4CAF50;
-            color: white;
-            border: none;
-            padding: 7px 12px;
-            border-radius: 3px;
-            cursor: pointer;
-            font-size: 0.9em;
-            transition: background 0.2s;
+            background: #4CAF50; /* Зеленая кнопка */
+            color: white; /* Белый текст */
+            border: none; /* Без рамки */
+            padding: 7px 12px; /* Внутренние отступы */
+            border-radius: 3px; /* Скругленные углы */
+            cursor: pointer; /* Курсор-указатель */
+            font-size: 0.9em; /* Размер шрифта */
+            transition: background 0.2s; /* Плавный переход при наведении */
         }
         .coord-search-control button:hover {
-            background: #45a049;
+            background: #45a049; /* Изменение цвета при наведении */
         }
 
         /* Стили для всплывающего окна с координатами */
         .leaflet-popup-content-wrapper {
-            background: rgba(20, 20, 20, 0.9) !important;
-            color: #fff !important;
-            border-radius: 5px;
-            box-shadow: 0 1px 5px rgba(0,0,0,0.4);
+            background: rgba(20, 20, 20, 0.9) !important; /* Темный полупрозрачный фон */
+            color: #fff !important; /* Белый текст */
+            border-radius: 5px; /* Скругленные углы */
+            box-shadow: 0 1px 5px rgba(0,0,0,0.4); /* Тень */
         }
         .leaflet-popup-tip {
-            background: rgba(20, 20, 20, 0.9) !important;
+            background: rgba(20, 20, 20, 0.9) !important; /* Темный полупрозрачный фон для "хвостика" попапа */
         }
 
-        /* Адаптивные настройки для мобильных устройств */
+        /* Адаптивные настройки для мобильных устройств (ширина экрана до 768px) */
         @media (max-width: 768px) {
             .leaflet-control-layers {
-                top: 55px !important; /* Смещаем контрол слоев ниже */
-                left: 10px !important;
+                top: 55px !important; /* Смещаем контрол слоев ниже, чтобы не перекрывать поиск */
+                left: 10px !important; /* Выравнивание по левому краю */
             }
             .coord-search-control {
-                width: calc(100% - 20px);
-                left: 10px;
-                transform: translateX(0);
-                top: 10px;
-                box-sizing: border-box;
+                width: calc(100% - 20px); /* Почти на всю ширину экрана с отступами */
+                left: 10px; /* Отступ слева */
+                transform: translateX(0); /* Отключаем центрирование через transform */
+                top: 10px; /* Отступ сверху */
+                box-sizing: border-box; /* Учитываем padding в расчете ширины */
             }
             .coord-search-control input {
-                flex-grow: 1;
-                width: auto;
+                flex-grow: 1; /* Поле ввода занимает все доступное пространство */
+                width: auto; /* Сбрасываем фиксированную ширину */
             }
         }
     </style>
@@ -125,9 +125,6 @@
     /* --- JavaScript Код --- */
 
     // Инициализация карты Leaflet
-    // center: начальные координаты [широта, долгота]
-    // zoom: начальный уровень зума
-    // zoomControl: false - отключаем стандартный контрол зума (добавим свой в другом месте)
     var map = L.map('map', { center: [48.3, 34.5], zoom: 6, zoomControl: false });
     // Добавляем стандартный контрол зума в правый верхний угол
     L.control.zoom({ position: 'topright' }).addTo(map);
@@ -135,26 +132,26 @@
     // --- Базовые слои ---
     // Google Hybrid слой
     var googleHybrid = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
-        maxZoom: 20, // Максимальный уровень зума
-        attribution: 'Google Hybrid' // Атрибуция для слоя
+        maxZoom: 20,
+        attribution: 'Google Hybrid'
     });
-    // Esri + Labels слой (состоит из двух слоев: спутник и метки)
+    // Esri + Labels слой (спутник + текстовые метки)
     var esriWithLabels = L.layerGroup([
-        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Wo
+[18.03.2026 9:46] ChatGPT | Nano Banana: rld_Imagery/MapServer/tile/{z}/{y}/{x}', {
             attribution: 'Esri World Imagery'
         }),
-        // Используем метки от CartoDB поверх спутниковых снимков Esri
         L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}.png', {
             attribution: 'CartoDB Labels',
-            pane: 'overlayPane' // Помещаем слой меток в pane 'overlayPane', чтобы он был поверх других
+            pane: 'overlayPane' // Чтобы метки были поверх спутника
         })
     ]);
-    // Добавляем Google Hybrid как слой по умолчанию при загрузке карты
+    // Добавляем Google Hybrid как слой по умолчанию
     googleHybrid.addTo(map);
 
     // --- Слои для объектов ---
     // Создаем группы слоев для каждого типа объектов.
-    // addTo(map) добавляет их на карту сразу, чтобы они были видны и управлялись через контрол слоев.
+    // addTo(map) добавляет их на карту сразу.
     var Russia = L.layerGroup().addTo(map);
     var Ukraine = L.layerGroup().addTo(map);
     var Trench = L.layerGroup().addTo(map);
@@ -168,4 +165,131 @@
         "Esri + Labels": esriWithLabels
     };
     var overlayMaps = {
-        // Используем HTML для стилизации
+        // Используем HTML для стилизации текста в меню слоев
+        "<b style='color: #ff4d4d;'>Россия (по умолчанию)</b>": Russia,
+        "<b style='color: #4d94ff;'>Украина</b>": Ukraine,
+        "<b style='color: #FFA500;'>Окопы</b>": Trench,
+        "<b style='color: #ADD8E6;'>Зубы дракона</b>": Teeth,
+        "<b style='color: #888;'>Проволочные заграждения</b>": Wire
+    };
+    // Добавляем контрол слоев в левый верхний угол, делаем его постоянно видимым
+    L.control.layers(baseMaps, overlayMaps, { position: 'topleft', collapsed: false }).addTo(map);
+
+    // --- Функционал: Контрол поиска по координатам ---
+    // Создаем пользовательский контрол Leaflet
+    var CoordSearchControl = L.Control.extend({
+        onAdd: function(map) {
+            var div = L.DomUtil.create('div', 'leaflet-control coord-search-control');
+            div.innerHTML = `
+                <input type="text" id="coordInput" placeholder="Широта, Долгота (например, 48.5, 34.5)">
+                <button id="searchCoordBtn">Найти</button>
+            `;
+
+            // Предотвращаем "просачивание" событий мыши/касания на карту
+            L.DomEvent.disableClickPropagation(div);
+            L.DomEvent.disableScrollPropagation(div);
+
+            // Добавляем обработчик клика на кнопку поиска
+            div.querySelector('#searchCoordBtn').addEventListener('click', function() {
+                var input = div.querySelector('#coordInput').value;
+                var parts = input.split(',').map(s => parseFloat(s.trim()));
+
+                if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+                    var lat = parts[0];
+                    var lon = parts[1];
+                    if (lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180) {
+                        map.setView([lat, lon], 12); // Перемещаем карту и устанавливаем зум
+                        // Удаляем предыдущий маркер, если он был
+                        if (this._searchMarker) {
+                            map.removeLayer(this._searchMarker);
+                        }
+                        // Создаем и добавляем новый маркер, открываем попап
+                        this._searchMarker = L.marker([lat, lon]).addTo(map)
+                            .bindPopup(`Координаты: ${lat.toFixed(4)}, ${lon.toFixed(4)}`).openPopup();
+                    } else {
+                        alert('Некорректные координаты. Широта должна быть от -90 до 90, Долгота от -180 до 180.');
+                    }
+                } else {
+                    alert('Пожалуйста, введите координаты в формате "Широта, Долгота".');
+                }
+            });
+            return div;
+        },
+        onRemove: function(map) { /* Очистка при удалении контрола */ }
+    });
+    /
+[18.03.2026 9:46] ChatGPT | Nano Banana: / Добавляем созданный контрол поиска на карту
+    new CoordSearchControl().addTo(map);
+
+    // --- Функционал: Отображение координат по долгому нажатию / правому клику ---
+    // Слушаем событие 'contextmenu' (правый клик или долгое нажатие)
+    map.on('contextmenu', function(e) {
+        var lat = e.latlng.lat.toFixed(4); // Получаем широту
+        var lon = e.latlng.lng.toFixed(4); // Получаем долготу
+        // Создаем и открываем всплывающее окно с координатами
+        L.popup()
+            .setLatLng(e.latlng)
+            .setContent(`<b>Координаты:</b><br>${lat}, ${lon}`)
+            .openOn(map);
+    });
+
+    // --- Функция для загрузки GeoJSON данных ---
+    // Принимает URL файла и группу слоев для добавления данных
+    function loadGeoJson(url, layerGroup) {
+        // Используем $.getJSON для загрузки данных из указанного URL
+        $.getJSON(url, function(data) {
+            // Создаем слой GeoJSON
+            L.geoJSON(data, {
+                style: featureStyle, // Применяем функцию стилизации полигонов/линий
+                pointToLayer: featurePointToLayer, // Применяем функцию создания маркеров для точек
+                onEachFeature: function(feature, layer) { // Функция для обработки каждого объекта GeoJSON
+                    layer.addTo(layerGroup); // Добавляем объект в соответствующую группу слоев
+                    // Если у объекта есть свойство 'name', привязываем всплывающее окно
+                    if (feature.properties.name) {
+                        layer.bindPopup(feature.properties.name);
+                    }
+                }
+            });
+        }).fail(function(jqxhr, textStatus, error) { // Обработка ошибки загрузки файла
+            var err = textStatus + ", " + error;
+            console.error(`Ошибка загрузки ${url}: ${err}`);
+            alert(`Ошибка загрузки ${url}: ${err}. Убедитесь, что файл существует и корректно отформатирован.`);
+        });
+    }
+
+    // --- Функции стилизации и создания объектов GeoJSON ---
+
+    // Стиль для полигонов и линий
+    function featureStyle(feature) {
+        var name = (feature.properties.name || "").toLowerCase(); // Имя объекта в нижнем регистре
+        // Определяем стиль в зависимости от имени объекта
+        if (name.includes("trench") || name.includes("окоп") || name.includes("ров")) return { color: "#FFA500", weight: 3, opacity: 1 };
+        if (name.includes("teeth") || name.includes("зубы")) return { color: "#ADD8E6", weight: 2, opacity: 1 };
+        if (name.includes("wire") || name.includes("проволока")) return { color: "#777", weight: 2, dashArray: "5, 10", opacity: 0.8 };
+        if (name.includes("ukraine") || name.includes("синяя") || name.includes("blue")) return { fillColor: "#0057b7", fillOpacity: 0.4, weight: 1, color: "#0057b7", opacity: 0.8 };
+        // Стиль по умолчанию для объектов России (полигоны)
+        return { fillColor: "#cc0000", fillOpacity: 0.4, weight: 1, color: "#cc0000", opacity: 0.8 };
+    }
+
+    // Стиль для точечных объектов (создание маркеров)
+    function featurePointToLayer(feature, latlng) {
+        var name = (feature.properties.name || "").toLowerCase();
+        // Создаем маркеры разного вида в зависимости от типа объекта
+        if (name.includes("teeth") || name.includes("зубы")) return L.circleMarker(latlng, { radius: 3, fillColor: "#ADD8E6", color: "#4d94ff", weight: 1, fillOpacity: 1 });
+        if (name.includes("ukraine") || name.includes("синяя")) return L.circleMarker(latlng, { radius: 5, fillColor: "#0057b7", color: "white", weight: 1, fillOpacity: 0.9 });
+        // Маркер по умолчанию для точек (для объектов России)
+        return L.circleMarker(latlng, { radius: 5, fillColor: "#cc0000", color: "white", weight: 1, fillOpacity: 0.9 });
+    }
+
+    // --- Загрузка GeoJSON данных ---
+    // Загружаем
+[18.03.2026 9:46] ChatGPT | Nano Banana: данные из отдельных файлов в папке 'data' и добавляем их в соответствующие группы слоев
+    loadGeoJson("data/ukraine.json", Ukraine);
+    loadGeoJson("data/russia.json", Russia);
+    loadGeoJson("data/trenches.json", Trench);
+    loadGeoJson("data/teeth.json", Teeth);
+    loadGeoJson("data/wire.json", Wire);
+
+</script>
+</body>
+</html>
