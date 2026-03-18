@@ -3,133 +3,169 @@
 <head>
     <meta charset="UTF-8">
     <title>Военная Карта</title>
+    <!-- Убедитесь, что viewport настроен правильно для мобильных -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <!-- Подключение Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        /* Общие стили для body и html, чтобы карта занимала всю страницу */
+        /* --- CSS Стили --- */
+
+        /* Стили для body и html: занимают всю высоту, скрывают прокрутку, темный фон */
         body, html {
             margin: 0;
             padding: 0;
-            height: 100%;
-            overflow: hidden; /* Скрывает полосы прокрутки */
-            background: #000; /* Темный фон */
-            font-family: Arial, sans-serif; /* Единый шрифт */
-        }
-        /* Карта занимает 100% ширины и высоты видимой области */
-        #map {
-            width: 100%;
-            height: 100vh;
-        }
-        /* Стили для контрола слоев Leaflet (левый верхний угол) */
-        .leaflet-control-layers {
-            background: rgba(20, 20, 20, 0.9) !important; /* Полупрозрачный темный фон */
-            color: #fff !important; /* Белый текст */
-            border: 2px solid #444 !important; /* Темная рамка */
-            border-radius: 5px; /* Скругленные углы */
-            box-shadow: 0 1px 5px rgba(0,0,0,0.4); /* Тень */
-        }
-        .leaflet-control-layers label {
-            color: #fff; /* Белый цвет для текста меток */
-        }
-        .leaflet-control-layers-separator {
-            background-color: #555 !important; /* Цвет разделителя */
+            height: 100%; /* Занимает всю доступную высоту родителя */
+            overflow: hidden; /* Убираем полосы прокрутки */
+            background: #000; /* Черный фон */
+            font-family: Arial, sans-serif; /* Шрифт */
         }
 
-        /* Стили для пользовательского контрола поиска координат (сверху по центру) */
+        /* Стили для контейнера карты #map */
+        #map {
+            width: 100%; /* 100% ширины */
+            height: 100vh; /* 100% высоты видимой области (viewport height) */
+            /* Важно: leaflet.js требует, чтобы родительские элементы имели размеры */
+        }
+
+        /* Стили для контрола слоев Leaflet */
+        .leaflet-control-layers {
+            background: rgba(20, 20, 20, 0.9) !important;
+            color: #fff !important;
+            border: 2px solid #444 !important;
+            border-radius: 5px;
+            box-shadow: 0 1px 5px rgba(0,0,0,0.4);
+        }
+        .leaflet-control-layers label {
+            color: #fff;
+        }
+        .leaflet-control-layers-separator {
+            background-color: #555 !important;
+        }
+
+        /* Стили для контрола поиска координат */
         .leaflet-control.coord-search-control {
-            position: absolute; /* Абсолютное позиционирование */
-            top: 10px; /* Отступ сверху */
-            left: 50%; /* На 50% от левого края */
-            transform: translateX(-50%); /* Центрирование по горизонтали */
-            z-index: 1000; /* Поверх всех других элементов */
-            background: rgba(20, 20, 20, 0.9); /* Полупрозрачный темный фон */
-            padding: 8px 12px; /* Внутренние отступы */
-            border-radius: 5px; /* Скругленные углы */
-            box-shadow: 0 1px 5px rgba(0,0,0,0.4); /* Тень */
-            display: flex; /* Используем flexbox для выравнивания элементов внутри */
-            align-items: center; /* Выравнивание по центру по вертикали */
-            gap: 8px; /* Расстояние между элементами (поле ввода и кнопка) */
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%); /* Центрирование */
+            z-index: 1000;
+            background: rgba(20, 20, 20, 0.9);
+            padding: 8px 12px;
+            border-radius: 5px;
+            box-shadow: 0 1px 5px rgba(0,0,0,0.4);
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
         .coord-search-control input {
-            background: #333; /* Темный фон поля ввода */
-            border: 1px solid #555; /* Темная рамка */
-            color: #eee; /* Светлый текст */
-            padding: 6px 10px; /* Внутренние отступы */
-            border-radius: 3px; /* Скругленные углы */
-            width: 180px; /* Фиксированная ширина */
-            max-width: 60vw; /* Максимальная ширина для адаптивности */
-            font-size: 0.9em; /* Размер шрифта */
+            background: #333;
+            border: 1px solid #555;
+            color: #eee;
+            padding: 6px 10px;
+            border-radius: 3px;
+            width: 180px;
+            max-width: 60vw;
+            font-size: 0.9em;
         }
         .coord-search-control button {
-            background: #4CAF50; /* Зеленая кнопка */
-            color: white; /* Белый текст */
-            border: none; /* Без рамки */
-            padding: 7px 12px; /* Внутренние отступы */
-            border-radius: 3px; /* Скругленные углы */
-            cursor: pointer; /* Курсор-указатель */
-            font-size: 0.9em; /* Размер шрифта */
-            transition: background 0.2s; /* Плавный переход при наведении */
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 7px 12px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: background 0.2s;
         }
         .coord-search-control button:hover {
-            background: #45a049; /* Изменение цвета при наведении */
+            background: #45a049;
         }
 
         /* Стили для всплывающего окна с координатами */
         .leaflet-popup-content-wrapper {
-            background: rgba(20, 20, 20, 0.9) !important; /* Темный полупрозрачный фон */
-            color: #fff !important; /* Белый текст */
-            border-radius: 5px; /* Скругленные углы */
-            box-shadow: 0 1px 5px rgba(0,0,0,0.4); /* Тень */
+            background: rgba(20, 20, 20, 0.9) !important;
+            color: #fff !important;
+            border-radius: 5px;
+            box-shadow: 0 1px 5px rgba(0,0,0,0.4);
         }
         .leaflet-popup-tip {
-            background: rgba(20, 20, 20, 0.9) !important; /* Темный полупрозрачный фон для "хвостика" попапа */
+            background: rgba(20, 20, 20, 0.9) !important;
         }
 
-        /* Адаптивные настройки для мобильных устройств (ширина экрана до 768px) */
+        /* Адаптивные настройки для мобильных устройств */
         @media (max-width: 768px) {
             .leaflet-control-layers {
-                top: 55px !important; /* Смещаем контрол слоев ниже, чтобы не перекрывать поиск */
-                left: 10px !important; /* Выравнивание по левому краю */
+                top: 55px !important; /* Смещаем контрол слоев ниже */
+                left: 10px !important;
             }
             .coord-search-control {
-                width: calc(100% - 20px); /* Почти на всю ширину экрана с отступами */
-                left: 10px; /* Отступ слева */
-                transform: translateX(0); /* Отключаем центрирование через transform */
-                top: 10px; /* Отступ сверху */
-                box-sizing: border-box; /* Учитываем padding в расчете ширины */
+                width: calc(100% - 20px);
+                left: 10px;
+                transform: translateX(0);
+                top: 10px;
+                box-sizing: border-box;
             }
             .coord-search-control input {
-                flex-grow: 1; /* Поле ввода занимает все доступное пространство */
-                width: auto; /* Сбрасываем фиксированную ширину */
+                flex-grow: 1;
+                width: auto;
             }
         }
     </style>
 </head>
 <body>
+<!-- Контейнер для карты -->
 <div id="map"></div>
 
+<!-- Подключение Leaflet JS -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<!-- Используем jQuery для удобной загрузки JSON -->
+<!-- Подключение jQuery для загрузки JSON -->
 <script src="https://unpkg.com/jquery@3.7.1/dist/jquery.min.js"></script>
+
 <script>
-    // Инициализация карты: центр [широта, долгота], начальный зум 6, отключаем встроенный контрол зума
+    /* --- JavaScript Код --- */
+
+    // Инициализация карты Leaflet
+    // center: начальные координаты [широта, долгота]
+    // zoom: начальный уровень зума
+    // zoomControl: false - отключаем стандартный контрол зума (добавим свой в другом месте)
     var map = L.map('map', { center: [48.3, 34.5], zoom: 6, zoomControl: false });
-    // Добавляем контрол зума в правый верхний угол
+    // Добавляем стандартный контрол зума в правый верхний угол
     L.control.zoom({ position: 'topright' }).addTo(map);
 
     // --- Базовые слои ---
+    // Google Hybrid слой
     var googleHybrid = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
-        maxZoom: 20,
-        attribution: 'Google Hybrid'
+        maxZoom: 20, // Максимальный уровень зума
+        attribution: 'Google Hybrid' // Атрибуция для слоя
     });
+    // Esri + Labels слой (состоит из двух слоев: спутник и метки)
     var esriWithLabels = L.layerGroup([
         L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
             attribution: 'Esri World Imagery'
         }),
+        // Используем метки от CartoDB поверх спутниковых снимков Esri
         L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}.png', {
             attribution: 'CartoDB Labels',
-            pane: 'overlayPane' // Убедимся, что метки поверх изображений
+            pane: 'overlayPane' // Помещаем слой меток в pane 'overlayPane', чтобы он был поверх других
         })
     ]);
-    googleHybrid.addTo(map); // Делаем Google Hybrid слоем по умолчанию
+    // Добавляем Google Hybrid как слой по умолчанию при загрузке карты
+    googleHybrid.addTo(map);
 
+    // --- Слои для объектов ---
+    // Создаем группы слоев для каждого типа объектов.
+    // addTo(map) добавляет их на карту сразу, чтобы они были видны и управлялись через контрол слоев.
+    var Russia = L.layerGroup().addTo(map);
+    var Ukraine = L.layerGroup().addTo(map);
+    var Trench = L.layerGroup().addTo(map);
+    var Teeth = L.layerGroup().addTo(map);
+    var Wire = L.layerGroup().addTo(map);
+
+    // --- Контрол слоев ---
+    // Определяем объекты для контрола слоев: базовые карты и оверлеи (наши объекты)
+    var baseMaps = {
+        "Google Hybrid": googleHybrid,
+        "Esri + Labels": esriWithLabels
+    };
+    var overlayMaps = {
+        // Используем HTML для стилизации
