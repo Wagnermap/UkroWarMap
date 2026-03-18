@@ -281,11 +281,11 @@
         return L.circleMarker(latlng, { radius: 5, fillColor: "#cc0000", color: "white", weight: 1, fillOpacity: 0.9 });
     }
 
-    // --- Загрузка GeoJSON данных ---
-    // Загружаем
-[18.03.2026 9:46] ChatGPT | Nano Banana: данные из отдельных файлов в папке 'data' и добавляем их в соответствующие группы слоев
+        // --- Загрузка данных GeoJSON ---
+    // Загружаем данные из отдельных файлов в папке 'data' и добавляем их в соответствующие группы слоев
     loadGeoJson("data/ukraine.json", Ukraine);
     loadGeoJson("data/russia.json", Russia);
+
     loadGeoJson("data/trenches.json", Trench);
     loadGeoJson("data/teeth.json", Teeth);
     loadGeoJson("data/wire.json", Wire);
