@@ -127,14 +127,17 @@
     var googleHybrid = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
         maxZoom: 20,
         attribution: 'Google Hybrid'
-    });
-    // Esri + Labels слой (спутник + текстовые метки)
+       });
+    // Слой Esri + метки (спутник + текстовые метки)
     var esriWithLabels = L.layerGroup([
         L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
             attribution: 'Esri World Imagery'
         }),
         L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}.png', {
-                });
+            attribution: 'CartoDB Labels',
+            pane: 'overlayPane' // Чтобы метки были поверх спутника
+        })
+    ]);
 DB Labels',
             pane: 'overlayPane' // Чтобы метки были поверх спутника
         })
