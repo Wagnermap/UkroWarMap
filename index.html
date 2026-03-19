@@ -102,52 +102,6 @@
                 transform: translateX(0); /* Disable horizontal centering via transform */
                 top: 10px; /* Top offset */
             }
-            background: rgba(20, 20, 20, 0.9); /* Semi-transparent dark background */
-            padding: 8px 12px; /* Inner padding */
-            border-radius: 5px; /* Rounded corners */
-            box-shadow: 0 1px 5px rgba(0,0,0,0.4); /* Shadow */
-            display: flex; /* Use flexbox for inner element alignment */
-            align-items: center; /* Align vertically in center */
-            gap: 8px; /* Space between elements (input field and button) */
-            max-width: 90%; /* Maximum width for responsiveness */
-            box-sizing: border-box; /* Include padding in width calculation */
-        }
-        .coord-search-control input {
-            background: #333; /* Dark background for input field */
-            border: 1px solid #555; /* Dark border */
-            color: #eee; /* Light text */
-            padding: 6px 10px; /* Inner padding */
-            border-radius: 3px; /* Rounded corners */
-            flex-grow: 1; /* Input field takes all available space */
-            font-size: 0.9em; /* Font size */
-        }
-        .coord-search-control button {
-            background: #4CAF50; /* Green button */
-            color: white; /* White text */
-            border: none; /* No border */
-            padding: 7px 12px; /* Inner padding */
-            border-radius: 3px; /* Rounded corners */
-            cursor: pointer; /* Pointer cursor */
-            font-size: 0.9em; /* Font size */
-            transition: background 0.2s; /* Smooth transition on hover */
-            white-space: nowrap; /* Prevent button text from wrapping */
-        }
-        .coord-search-control button:hover {
-            background: #45a049; /* Color change on hover */
-        }
-
-        /* Responsive settings for mobile devices (screen width up to 768px) */
-        @media (max-width: 768px) {
-            .leaflet-control-layers {
-                top: 55px !important; /* Shift layer control down to avoid overlapping search */
-                left: 10px !important; /* Align to left */
-            }
-            .coord-search-control {
-                width: calc(100% - 20px); /* Almost full screen width with margins */
-                left: 10px; /* Left offset */
-                transform: translateX(0); /* Disable horizontal centering via transform */
-                top: 10px; /* Top offset */
-            }
         }
     </style>
 </head>
@@ -294,7 +248,7 @@
         var lon = e.latlng.lng.toFixed(4); // Get longitude
         // Create and open popup with coordinates
         L.popup()
-            .setLatLng(e.latlng) // Fixed the broken line
+            .setLatLng(e.latlng)
             .setContent(`<b>Coordinates:</b><br>${lat}, ${lon}`)
             .openOn(map);
     });
@@ -334,7 +288,7 @@
         if (name.includes("wire")) return { color: "#777", weight: 2, dashArray: "5, 10", opacity: 0.8 };
         // Ukraine layer: DeepSkyBlue, slightly more opaque
         if (name.includes("ukraine") || name.includes("blue")) return { fillColor: "#00BFFF", fillOpacity: 0.6, weight: 1, color: "#00BFFF", opacity: 0.9 };
-        // Russia layer: more transparent, no border
+        // Russia layer: moretransparent, no border
         return { fillColor: "#cc0000", fillOpacity: 0.15, weight: 0, color: 'transparent', opacity: 0 }; // No border for polygons
     }
 
@@ -359,4 +313,3 @@
 </script>
 </body>
 </html>
-
