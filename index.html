@@ -146,10 +146,9 @@
     // addTo(map) adds them to the map immediately.
     var Russia = L.layerGroup().addTo(map);
     var Ukraine = L.layerGroup().addTo(map);
-    // Trench, Teeth, Wire layers are commented out as per user's file availability
-    // var Trench = L.layerGroup().addTo(map);
-    // var Teeth = L.layerGroup().addTo(map);
-    // var Wire = L.layerGroup().addTo(map);
+    var Trench = L.layerGroup().addTo(map); // Re-enabled
+    var Teeth = L.layerGroup().addTo(map);  // Re-enabled
+    var Wire = L.layerGroup().addTo(map);   // Re-enabled
 
     // --- Layer Control ---
     // Define objects for layer control: base maps and overlays (our features)
@@ -160,10 +159,10 @@
     var overlayMaps = {
         // Use HTML for styling text in layer menu
         "<b style='color: #ff4d4d;'>Russia (Default)</b>": Russia,
-        "<b style='color: #4d94ff;'>Ukraine</b>": Ukraine,
-        // "<b style='color: #FFA500;'>Trenches</b>": Trench, // Commented out
-        // "<b style='color: #ADD8E6;'>Dragon's Teeth</b>": Teeth, // Commented out
-        // "<b style='color: #888;'>Wire Fences</b>": Wire // Commented out
+        "<b style='color: #00BFFF;'>Ukraine</b>": Ukraine, // Updated color to DeepSkyBlue
+        "<b style='color: #FFA500;'>Trenches</b>": Trench, // Re-enabled
+        "<b style='color: #ADD8E6;'>Dragon's Teeth</b>": Teeth, // Re-enabled
+        "<b style='color: #888;'>Wire Fences</b>": Wire // Re-enabled
     };
     // Add layer control to top-left, make it **collapsed by default**
     L.control.layers(baseMaps, overlayMaps, { position: 'topleft', collapsed: true }).addTo(map);
@@ -219,7 +218,9 @@
         var lat = e.latlng.lat.toFixed(4); // Get latitude
         var lon = e.latlng.lng.toFixed(4); // Get longitude
         // Create and open popup with coordinates
-        L.popup().setLatLng(e.latlng)
+        L.popup()
+            .setLatLng(e\ 
+.latlng)
             .setContent(`<b>Coordinates:</b><br>${lat}, ${lon}`)
             .openOn(map);
     });
@@ -257,10 +258,10 @@
         if (name.includes("trench")) return { color: "#FFA500", weight: 3, opacity: 1 };
         if (name.includes("teeth")) return { color: "#ADD8E6", weight: 2, opacity: 1 };
         if (name.includes("wire")) return { color: "#777", weight: 2, dashArray: "5, 10", opacity: 0.8 };
-        // Increased opacity for Ukraine layer for better visibility
-        if (name.includes("ukraine") || name.includes("blue")) return { fillColor: "#0057b7", fillOpacity: 0.6, weight: 1, color: "#0057b7", opacity: 0.9 };
-        // Default style for Russia features (polygons)
-        return { fillColor: "#cc0000", fillOpacity: 0.4, weight: 1, color: "#cc0000", opacity: 0.8 };
+        // Ukraine layer: DeepSkyBlue, slightly more opaque
+        if (name.includes("ukraine") || name.includes("blue")) return { fillColor: "#00BFFF", fillOpacity: 0.6, weight: 1, color: "#00BFFF", opacity: 0.9 };
+        // Russia layer: more transparent, no border
+        return { fillColor: "#cc0000", fillOpacity: 0.15, weight: 0, color: 'transparent', opacity: 0 }; // No border for polygons
     }
 
     // Style for point features (creating markers)
@@ -268,18 +269,18 @@
         var name = (feature.properties.name || "").toLowerCase();
         // Create different marker types based on feature type
         if (name.includes("teeth")) return L.circleMarker(latlng, { radius: 3, fillColor: "#ADD8E6", color: "#4d94ff", weight: 1, fillOpacity: 1 });
-        if (name.includes("ukraine")) return L.circleMarker(latlng, { radius: 5, fillColor: "#0057b7", color: "white", weight: 1, fillOpacity: 0.9 });
-        // Default marker for points (for Russia features)
-        return L.circleMarker(latlng, { radius: 5, fillColor: "#cc0000", color: "white", weight: 1, fillOpacity: 0.9 });
+        if (name.includes("ukraine")) return L.circleMarker(latlng, { radius: 5, fillColor: "#00BFFF", color: "white", weight: 1, fillOpacity: 0.9 });
+        // Russia point marker: transparent border
+        return L.circleMarker(latlng, { radius: 5, fillColor: "#cc0000", color: "transparent", weight: 0, fillOpacity: 0.9 }); // No border for points
     }
 
     // --- Load GeoJSON Data ---
     // Load data from individual GeoJSON files in 'data' folder and add to respective layer groups
     loadGeoJson("data/ukraine.json", Ukraine);
     loadGeoJson("data/russia.json", Russia);
-    // loadGeoJson("data/trenches.json", Trench); // Commented out - no file
-    // loadGeoJson("data/teeth.json", Teeth);     // Commented out - no file
-    // loadGeoJson("data/wire.json", Wire);       // Commented out - no file
+    loadGeoJson("data/trenches.json", Trench); // Re-enabled
+    loadGeoJson("data/teeth.json", Teeth);     // Re-enabled
+    loadGeoJson("data/wire.json", Wire);       // Re-enabled
 
 </script>
 </body>
