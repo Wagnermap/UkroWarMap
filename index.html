@@ -2,190 +2,187 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Военная Карта</title>
-    <!-- Настройка viewport для корректного отображения на мобильных устройствах -->
+    <title>War Map</title>
+    <!-- Viewport settings for responsive design on mobile devices -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <!-- Подключение CSS Leaflet -->
+    <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        /* --- CSS Стили --- */
+        /* --- CSS Styles --- */
 
-        /* Стили для body и html: занимают всю высоту, скрывают прокрутку, темный фон */
+        /* Styles for body and html: full height, hidden overflow, dark background */
         body, html {
             margin: 0;
             padding: 0;
-            height: 100%; /* Занимает всю доступную высоту родителя */
-            overflow: hidden; /* Убираем полосы прокрутки */
-            background: #000; /* Черный фон */
-            font-family: Arial, sans-serif; /* Шрифт */
+            height: 100%; /* Occupies full available parent height */
+            overflow: hidden; /* Hide scrollbars */
+            background: #000; /* Black background */
+            font-family: Arial, sans-serif; /* Font style */
         }
 
-        /* Стили для контейнера карты #map */
+        /* Styles for the map container #map */
         #map {
-            width: 100%; /* 100% ширины */
-            height: 100vh; /* 100% высоты видимой области (viewport height) */
-            /* Важно: leaflet.js требует, чтобы родительские элементы имели размеры */
+            width: 100%; /* 100% width */
+            height: 100vh; /* 100% viewport height */
+            /* Important: leaflet.js requires parent elements to have dimensions */
         }
 
-        /* Стили для контрола слоев Leaflet (левый верхний угол) */
+        /* Styles for Leaflet layer control (top-left) */
         .leaflet-control-layers {
-            background: rgba(20, 20, 20, 0.9) !important; /* Полупрозрачный темный фон */
-            color: #fff !important; /* Белый текст */
-            border: 2px solid #444 !important; /* Темная рамка */
-            border-radius: 5px; /* Скругленные углы */
-            box-shadow: 0 1px 5px rgba(0,0,0,0.4); /* Тень */
+            background: rgba(20, 20, 20, 0.9) !important; /* Semi-transparent dark background */
+            color: #fff !important; /* White text */
+            border: 2px solid #444 !important; /* Dark border */
+            border-radius: 5px; /* Rounded corners */
+            box-shadow: 0 1px 5px rgba(0,0,0,0.4); /* Shadow */
         }
         .leaflet-control-layers label {
-            color: #fff; /* Белый цвет для текста меток */
+            color: #fff; /* White color for label text */
         }
         .leaflet-control-layers-separator {
-            background-color: #555 !important; /* Цвет разделителя */
+            background-color: #555 !important; /* Separator color */
         }
-        /* Убедимся, что открытый контрол слоев не слишком широкий */
+        /* Ensure expanded layer control isn't too wide */
         .leaflet-control-layers-expanded {
-            width: auto; /* Ширина по содержимому */
-            min-width: 150px; /* Минимальная ширина */
-            max-width: calc(100% - 20px); /* Максимальная ширина на мобильных */
+            width: auto; /* Width based on content */
+            min-width: 150px; /* Minimum width */
+            max-width: calc(100% - 20px); /* Maximum width on mobile */
             box-sizing: border-box;
         }
 
-        /* Стили для контрола поиска координат (сверху по центру) */
+        /* Styles for coordinate search control (top-center) */
         .leaflet-control.coord-search-control {
-            position: absolute; /* Абсолютное позиционирование */
-            top: 10px; /* Отступ сверху */
-            left: 50%; /* На 50% от левого края */
-            transform: translateX(-50%); /* Центрирование по горизонтали */
-            z-index: 1000; /* Поверх всех других элементов */
-            background: rgba(20, 20, 20, 0.9); /* Полупрозрачный темный фон */
-            padding: 8px 12px; /* Внутренние отступы */
-            border-radius: 5px; /* Скругленные углы */
-            box-shadow: 0 1px 5px rgba(0,0,0,0.4); /* Тень */
-            display: flex; /* Используем flexbox для выравнивания элементов внутри */
-            align-items: center; /* Выравнивание по центру по вертикали */
-            gap: 8px; /* Расстояние между элементами (поле ввода и кнопка) */
-            max-width: 90%; /* Максимальная ширина для адаптивности */
-            box-sizing: border-box; /* Учитываем padding в расчете ширины */
+            position: absolute; /* Absolute positioning */
+            top: 10px; /* Top offset */
+            left: 50%; /* 50% from left edge */
+            transform: translateX(-50%); /* Center horizontally */
+            z-index: 1000; /* Above all other elements */
+            background: rgba(20, 20, 20, 0.9); /* Semi-transparent dark background */
+            padding: 8px 12px; /* Inner padding */
+            border-radius: 5px; /* Rounded corners */
+            box-shadow: 0 1px 5px rgba(0,0,0,0.4); /* Shadow */
+            display: flex; /* Use flexbox for inner element alignment */
+            align-items: center; /* Align vertically in center */
+            gap: 8px; /* Space between elements (input field and button) */
+            max-width: 90%; /* Maximum width for responsiveness */
+            box-sizing: border-box; /* Include padding in width calculation */
         }
         .coord-search-control input {
-            background: #333; /* Темный фон поля ввода */
-            border: 1px solid #555; /* Темная рамка */
-            color: #eee; /* Светлый текст */
-            padding: 6px 10px; /* Внутренние отступы */
-            border-radius: 3px; /* Скругленные углы */
-            flex-grow: 1; /* Поле ввода занимает все доступное пространство */
-            font-size: 0.9em; /* Размер шрифта */
+            background: #333; /* Dark background for input field */
+            border: 1px solid #555; /* Dark border */
+            color: #eee; /* Light text */
+            padding: 6px 10px; /* Inner padding */
+            border-radius: 3px; /* Rounded corners */
+            flex-grow: 1; /* Input field takes all available space */
+            font-size: 0.9em; /* Font size */
         }
         .coord-search-control button {
-            background: #4CAF50; /* Зеленая кнопка */
-            color: white; /* Белый текст */
-            border: none; /* Без рамки */
-            padding: 7px 12px; /* Внутренние отступы */
-            border-radius: 3px; /* Скругленные углы */
-            cursor: pointer; /* Курсор-указатель */
-            font-size: 0.9em; /* Размер шрифта */
-            transition: background 0.2s; /* Плавный переход при наведении */
-            white-space: nowrap; /* Чтобы кнопка не переносилась на новую строку */
+            background: #4CAF50; /* Green button */
+            color: white; /* White text */
+            border: none; /* No border */
+            padding: 7px 12px; /* Inner padding */
+            border-radius: 3px; /* Rounded corners */
+            cursor: pointer; /* Pointer cursor */
+            font-size: 0.9em; /* Font size */
+            transition: background 0.2s; /* Smooth transition on hover */
+            white-space: nowrap; /* Prevent button text from wrapping */
         }
         .coord-search-control button:hover {
-            background: #45a049; /* Изменение цвета при наведении */
+            background: #45a049; /* Color change on hover */
         }
 
-        /* Адаптивные настройки для мобильных устройств (ширина экрана до 768px) */
+        /* Responsive settings for mobile devices (screen width up to 768px) */
         @media (max-width: 768px) {
             .leaflet-control-layers {
-                top: 55px !important; /* Смещаем контрол слоев ниже, чтобы не перекрывать поиск */
-                left: 10px !important; /* Выравнивание по левому краю */
+                top: 55px !important; /* Shift layer control down to avoid overlapping search */
+                left: 10px !important; /* Align to left */
             }
             .coord-search-control {
-                width: calc(100% - 20px); /* Почти на всю ширину экрана с отступами */
-                left: 10px; /* Отступ слева */
-                transform: translateX(0); /* Отключаем центрирование через transform */
-                top: 10px; /* Отступ сверху */
+                width: calc(100% - 20px); /* Almost full screen width with margins */
+                left: 10px; /* Left offset */
+                transform: translateX(0); /* Disable horizontal centering via transform */
+                top: 10px; /* Top offset */
             }
         }
     </style>
 </head>
 <body>
-<!-- Контейнер для карты -->
+<!-- Map container -->
 <div id="map"></div>
 
-<!-- Подключение Leaflet JS -->
+<!-- Leaflet JS -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<!-- Подключение jQuery для загрузки JSON -->
+<!-- jQuery for JSON loading -->
 <script src="https://unpkg.com/jquery@3.7.1/dist/jquery.min.js"></script>
 
 <script>
-    /* --- JavaScript Код --- */
+    /* --- JavaScript Code --- */
 
-    // Инициализация карты Leaflet
+    // Initialize Leaflet map
     var map = L.map('map', { center: [48.3, 34.5], zoom: 6, zoomControl: false });
-    // Добавляем стандартный контрол зума в правый верхний угол
+    // Add standard zoom control to top-right corner
     L.control.zoom({ position: 'topright' }).addTo(map);
 
-    // --- Базовые слои ---
-    // Google Hybrid слой
+    // --- Base Layers ---
+    // Google Hybrid Layer
     var googleHybrid = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
         maxZoom: 20,
         attribution: 'Google Hybrid'
-       });
-    // Слой Esri + метки (спутник + текстовые метки)
+    });
+    // Esri + Labels Layer (satellite + text labels)
     var esriWithLabels = L.layerGroup([
         L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
             attribution: 'Esri World Imagery'
         }),
         L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}.png', {
             attribution: 'CartoDB Labels',
-            pane: 'overlayPane' // Чтобы метки были поверх спутника
+            pane: 'overlayPane' // To place labels above satellite imagery
         })
     ]);
-DB Labels',
-            pane: 'overlayPane' // Чтобы метки были поверх спутника
-        })
-    ]);
-    // Добавляем Google Hybrid как слой по умолчанию
+    // Add Google Hybrid as default layer
     googleHybrid.addTo(map);
 
-    // --- Слои для объектов ---
-    // Создаем группы слоев для каждого типа объектов.
-    // addTo(map) добавляет их на карту сразу.
+    // --- Feature Layers ---
+    // Create layer groups for each feature type.
+    // addTo(map) adds them to the map immediately.
     var Russia = L.layerGroup().addTo(map);
     var Ukraine = L.layerGroup().addTo(map);
-    var Trench = L.layerGroup().addTo(map);
-    var Teeth = L.layerGroup().addTo(map);
-    var Wire = L.layerGroup().addTo(map);
+    // Trench, Teeth, Wire layers are commented out as per user's file availability
+    // var Trench = L.layerGroup().addTo(map);
+    // var Teeth = L.layerGroup().addTo(map);
+    // var Wire = L.layerGroup().addTo(map);
 
-    // --- Контрол слоев ---
-    // Определяем объекты для контрола слоев: базовые карты и оверлеи (наши объекты)
+    // --- Layer Control ---
+    // Define objects for layer control: base maps and overlays (our features)
     var baseMaps = {
         "Google Hybrid": googleHybrid,
         "Esri + Labels": esriWithLabels
     };
     var overlayMaps = {
-        // Используем HTML для стилизации текста в меню слоев
-        "<b style='color: #ff4d4d;'>Россия (по умолчанию)</b>": Russia,
-        "<b style='color: #4d94ff;'>Украина</b>": Ukraine,
-        "<b style='color: #FFA500;'>Окопы</b>": Trench,
-        "<b style='color: #ADD8E6;'>Зубы дракона</b>": Teeth,
-        "<b style='color: #888;'>Проволочные заграждения</b>": Wire
+        // Use HTML for styling text in layer menu
+        "<b style='color: #ff4d4d;'>Russia (Default)</b>": Russia,
+        "<b style='color: #4d94ff;'>Ukraine</b>": Ukraine,
+        // "<b style='color: #FFA500;'>Trenches</b>": Trench, // Commented out
+        // "<b style='color: #ADD8E6;'>Dragon's Teeth</b>": Teeth, // Commented out
+        // "<b style='color: #888;'>Wire Fences</b>": Wire // Commented out
     };
-    // Добавляем контрол слоев в левый верхний угол, делаем его **свернутым по умолчанию**
+    // Add layer control to top-left, make it **collapsed by default**
     L.control.layers(baseMaps, overlayMaps, { position: 'topleft', collapsed: true }).addTo(map);
 
-    // --- Функционал: Контрол поиска по координатам ---
-    // Создаем пользовательский контрол Leaflet
+    // --- Feature: Coordinate Search Control ---
+    // Create a custom Leaflet control
     var CoordSearchControl = L.Control.extend({
         onAdd: function(map) {
             var div = L.DomUtil.create('div', 'leaflet-control coord-search-control');
             div.innerHTML = `
-                <input type="text" id="coordInput" placeholder="Широта, Долгота (например, 48.5, 34.5)">
-                <button id="searchCoordBtn">Найти</button>
+                <input type="text" id="coordInput" placeholder="Latitude, Longitude (e.g., 48.5, 34.5)">
+                <button id="searchCoordBtn">Search</button>
             `;
 
-            // Предотвращаем "просачивание" событий мыши/касания на карту
+            // Prevent click/scroll events from propagating to the map
             L.DomEvent.disableClickPropagation(div);
             L.DomEvent.disableScrollPropagation(div);
 
-            // Добавляем обработчик клика на кнопку поиска
+            // Add click handler to search button
             div.querySelector('#searchCoordBtn').addEventListener('click', function() {
                 var input = div.querySelector('#coordInput').value;
                 var parts = input.split(',').map(s => parseFloat(s.trim()));
@@ -194,98 +191,97 @@ DB Labels',
                     var lat = parts[0];
                     var lon = parts[1];
                     if (lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180) {
-                        map.setView([lat, lon], 12); // Перемещаем карту и устанавливаем зум
-                        // Удаляем предыдущий маркер, если он был
+                        map.setView([lat, lon], 12); // Move map and set zoom
+                        // Remove previous marker if it existed
                         if (this._searchMarker) {
                             map.removeLayer(this._searchMarker);
                         }
-                        // Создаем и добавляем новый маркер, открываем попап
+                        // Create and add new marker, open popup
                         this._searchMarker = L.marker([lat, lon]).addTo(map)
-                            .bindPopup(`Координаты: ${lat.toFixed(4)}, ${lon.toFixed(4)}`).openPopup();
+                            .bindPopup(`Coordinates: ${lat.toFixed(4)}, ${lon.toFixed(4)}`).openPopup();
                     } else {
-                        alert('Некорректные координаты. Широта должна быть от -90 до 90, Долгота от -180 до 180.');
+                        alert('Invalid coordinates. Latitude must be between -90 and 90, Longitude between -180 and 180.');
                     }
                 } else {
-                    alert('Пожалуйста, введите координаты в формате "Широта, Долгота".');
+                    alert('Please enter coordinates in "Latitude, Longitude" format.');
                 }
             });
             return div;
         },
-        onRemove: function(map) { /* Очистка при удалении контрола */ }
+        onRemove: function(map) { /* Cleanup on control removal */ }
     });
-    // Добавляем созданный контрол поиска на карту
+    // Add created search control to the map
     new CoordSearchControl().addTo(map);
 
-    // --- Функционал: Отображение координат по долгому нажатию / правому клику ---
-    // Слушаем событие 'contextmenu' (правый клик или долгое нажатие)
+    // --- Feature: Display coordinates on long press / right click ---
+    // Listen for 'contextmenu' event (right click or long press)
     map.on('contextmenu', function(e) {
-        var lat = e.latlng.lat.toFixed(4); // Получаем широту
-        var lon = e.latlng.lng.toFixed(4); // Получаем долготу
-        // Создаем и открываем всплывающее окно с координатами
-        L.popup()
-            .setLatLng(e.latlng)
-            .setContent(`<b>Координаты:</b><br>${lat}, ${lon}`)
+        var lat = e.latlng.lat.toFixed(4); // Get latitude
+        var lon = e.latlng.lng.toFixed(4); // Get longitude
+        // Create and open popup with coordinates
+        L.popup().setLatLng(e.latlng)
+            .setContent(`<b>Coordinates:</b><br>${lat}, ${lon}`)
             .openOn(map);
     });
 
-    // --- Функция для загрузки GeoJSON данных ---
-    // Принимает URL файла и группу слоев для добавления данных
+    // --- Function to load GeoJSON data ---
+    // Takes file URL and layer group for adding data
     function loadGeoJson(url, layerGroup) {
-        // Используем $.getJSON для загрузки данных из указанного URL
+        // Use $.getJSON to load data from specified URL
         $.getJSON(url, function(data) {
-            // Создаем слой GeoJSON
+            // Create GeoJSON layer
             L.geoJSON(data, {
-                style: featureStyle, // Применяем функцию стилизации полигонов/линий
-                pointToLayer: featurePointToLayer, // Применяем функцию создания маркеров для точек
-                onEachFeature: function(feature, layer) { // Функция для обработки каждого объекта GeoJSON
-                    layer.addTo(layerGroup); // Добавляем объект в соответствующую группу слоев
-                    // Если у объекта есть свойство 'name', привязываем всплывающее окно
+                style: featureStyle, // Apply styling function for polygons/lines
+                pointToLayer: featurePointToLayer, // Apply function for creating markers for points
+                onEachFeature: function(feature, layer) { // Function to process each GeoJSON feature
+                    layer.addTo(layerGroup); // Add feature to the corresponding layer group
+                    // If feature has 'name' property, bind popup
                     if (feature.properties.name) {
                         layer.bindPopup(feature.properties.name);
                     }
                 }
             });
-        }).fail(function(jqxhr, textStatus, error) { // Обработка ошибки загрузки файла
+        }).fail(function(jqxhr, textStatus, error) { // Handle file loading errors
             var err = textStatus + ", " + error;
-            console.error(`Ошибка загрузки ${url}: ${err}`);
-            alert(`Ошибка загрузки ${url}: ${err}. Убедитесь, что файл существует и корректно отформатирован.`);
+            console.error(`Error loading ${url}: ${err}`);
+            alert(`Error loading ${url}: ${err}. Ensure the file exists and is correctly formatted.`);
         });
     }
 
-    // --- Функции стилизации и создания объектов GeoJSON ---
+    // --- GeoJSON Styling and Feature Creation Functions ---
 
-    // Стиль для полигонов и линий
+    // Style for polygons and lines
     function featureStyle(feature) {
-        var name = (feature.properties.name || "").toLowerCase(); // Имя объекта в нижнем регистре
-        // Определяем стиль в зависимости от имени объекта
-        if (name.includes("trench") || name.includes("окоп") || name.includes("ров")) return { color: "#FFA500", weight: 3, opacity: 1 };
-        if (name.includes("teeth") || name.includes("зубы")) return { color: "#ADD8E6", weight: 2, opacity: 1 };
-        if (name.includes("wire") || name.includes("проволока")) return { color: "#777", weight: 2, dashArray: "5, 10", opacity: 0.8 };
-        // Увеличена прозрачность украинского слоя для лучшей видимости
-        if (name.includes("ukraine") || name.includes("синяя") || name.includes("blue")) return { fillColor: "#0057b7", fillOpacity: 0.6, weight: 1, color: "#0057b7", opacity: 0.9 };
-        // Стиль по умолчанию для объектов России (полигоны)
+        var name = (feature.properties.name || "").toLowerCase(); // Feature name in lowercase
+        // Define style based on feature name
+        if (name.includes("trench")) return { color: "#FFA500", weight: 3, opacity: 1 };
+        if (name.includes("teeth")) return { color: "#ADD8E6", weight: 2, opacity: 1 };
+        if (name.includes("wire")) return { color: "#777", weight: 2, dashArray: "5, 10", opacity: 0.8 };
+        // Increased opacity for Ukraine layer for better visibility
+        if (name.includes("ukraine") || name.includes("blue")) return { fillColor: "#0057b7", fillOpacity: 0.6, weight: 1, color: "#0057b7", opacity: 0.9 };
+        // Default style for Russia features (polygons)
         return { fillColor: "#cc0000", fillOpacity: 0.4, weight: 1, color: "#cc0000", opacity: 0.8 };
     }
 
-    // Стиль для точечных объектов (создание маркеров)
+    // Style for point features (creating markers)
     function featurePointToLayer(feature, latlng) {
         var name = (feature.properties.name || "").toLowerCase();
-        // Создаем маркеры разного вида в зависимости от типа объекта
-        if (name.includes("teeth") || name.includes("зубы")) return L.circleMarker(latlng, { radius: 3, fillColor: "#ADD8E6", color: "#4d94ff", weight: 1, fillOpacity: 1 });
-        if (name.includes("ukraine") || name.includes("синяя")) return L.circleMarker(latlng, { radius: 5, fillColor: "#0057b7", color: "white", weight: 1, fillOpacity: 0.9 });
-        // Маркер по умолчанию для точек (для объектов России)
+        // Create different marker types based on feature type
+        if (name.includes("teeth")) return L.circleMarker(latlng, { radius: 3, fillColor: "#ADD8E6", color: "#4d94ff", weight: 1, fillOpacity: 1 });
+        if (name.includes("ukraine")) return L.circleMarker(latlng, { radius: 5, fillColor: "#0057b7", color: "white", weight: 1, fillOpacity: 0.9 });
+        // Default marker for points (for Russia features)
         return L.circleMarker(latlng, { radius: 5, fillColor: "#cc0000", color: "white", weight: 1, fillOpacity: 0.9 });
     }
 
-    // --- Загрузка GeoJSON данных ---
-    // Загружаем данные из отдельных файлов в папке 'data' и добавляем их в соответствующие группы слоев
+    // --- Load GeoJSON Data ---
+    // Load data from individual GeoJSON files in 'data' folder and add to respective layer groups
     loadGeoJson("data/ukraine.json", Ukraine);
-    loadGeoJson("data/russia\ 
-.json", Russia);
-    loadGeoJson("data/trenches.json", Trench);
-    loadGeoJson("data/teeth.json", Teeth);
-    loadGeoJson("data/wire.json", Wire);
+    loadGeoJson("data/russia.json", Russia);
+    // loadGeoJson("data/trenches.json", Trench); // Commented out - no file
+    // loadGeoJson("data/teeth.json", Teeth);     // Commented out - no file
+    // loadGeoJson("data/wire.json", Wire);       // Commented out - no file
 
 </script>
 </body>
 </html>
+
