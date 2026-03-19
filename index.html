@@ -102,6 +102,52 @@
                 transform: translateX(0); /* Disable horizontal centering via transform */
                 top: 10px; /* Top offset */
             }
+            background: rgba(20, 20, 20, 0.9); /* Semi-transparent dark background */
+            padding: 8px 12px; /* Inner padding */
+            border-radius: 5px; /* Rounded corners */
+            box-shadow: 0 1px 5px rgba(0,0,0,0.4); /* Shadow */
+            display: flex; /* Use flexbox for inner element alignment */
+            align-items: center; /* Align vertically in center */
+            gap: 8px; /* Space between elements (input field and button) */
+            max-width: 90%; /* Maximum width for responsiveness */
+            box-sizing: border-box; /* Include padding in width calculation */
+        }
+        .coord-search-control input {
+            background: #333; /* Dark background for input field */
+            border: 1px solid #555; /* Dark border */
+            color: #eee; /* Light text */
+            padding: 6px 10px; /* Inner padding */
+            border-radius: 3px; /* Rounded corners */
+            flex-grow: 1; /* Input field takes all available space */
+            font-size: 0.9em; /* Font size */
+        }
+        .coord-search-control button {
+            background: #4CAF50; /* Green button */
+            color: white; /* White text */
+            border: none; /* No border */
+            padding: 7px 12px; /* Inner padding */
+            border-radius: 3px; /* Rounded corners */
+            cursor: pointer; /* Pointer cursor */
+            font-size: 0.9em; /* Font size */
+            transition: background 0.2s; /* Smooth transition on hover */
+            white-space: nowrap; /* Prevent button text from wrapping */
+        }
+        .coord-search-control button:hover {
+            background: #45a049; /* Color change on hover */
+        }
+
+        /* Responsive settings for mobile devices (screen width up to 768px) */
+        @media (max-width: 768px) {
+            .leaflet-control-layers {
+                top: 55px !important; /* Shift layer control down to avoid overlapping search */
+                left: 10px !important; /* Align to left */
+            }
+            .coord-search-control {
+                width: calc(100% - 20px); /* Almost full screen width with margins */
+                left: 10px; /* Left offset */
+                transform: translateX(0); /* Disable horizontal centering via transform */
+                top: 10px; /* Top offset */
+            }
         }
     </style>
 </head>
@@ -146,9 +192,9 @@
     // addTo(map) adds them to the map immediately.
     var Russia = L.layerGroup().addTo(map);
     var Ukraine = L.layerGroup().addTo(map);
-    var Trench = L.layerGroup().addTo(map); // Re-enabled
-    var Teeth = L.layerGroup().addTo(map);  // Re-enabled
-    var Wire = L.layerGroup().addTo(map);   // Re-enabled
+    var Trench = L.layerGroup().addTo(map);
+    var Teeth = L.layerGroup().addTo(map);
+    var Wire = L.layerGroup().addTo(map);
 
     // --- Layer Control ---
     // Define objects for layer control: base maps and overlays (our features)
@@ -160,54 +206,83 @@
         // Use HTML for styling text in layer menu
         "<b style='color: #ff4d4d;'>Russia (Default)</b>": Russia,
         "<b style='color: #00BFFF;'>Ukraine</b>": Ukraine, // Updated color to DeepSkyBlue
-        "<b style='color: #FFA500;'>Trenches</b>": Trench, // Re-enabled
-        "<b style='color: #ADD8E6;'>Dragon's Teeth</b>": Teeth, // Re-enabled
-        "<b style='color: #888;'>Wire Fences</b>": Wire // Re-enabled
+        "<b style='color: #FFA500;'>Trenches</b>": Trench,
+        "<b style='color: #ADD8E6;'>Dragon's Teeth</b>": Teeth,
+        "<b style='color: #888;'>Wire Fences</b>": Wire
     };
     // Add layer control to top-left, make it **collapsed by default**
     L.control.layers(baseMaps, overlayMaps, { position: 'topleft', collapsed: true }).addTo(map);
 
-    // --- Feature: Coordinate Search Control ---
+    // --- Feature: Coordinate/Location Search Control ---
     // Create a custom Leaflet control
     var CoordSearchControl = L.Control.extend({
+        _searchMarker: null, // Private property to hold the search marker
         onAdd: function(map) {
-            var div = L.DomUtil.create('div', 'leaflet-control coord-search-control');
-            div.innerHTML = `
-                <input type="text" id="coordInput" placeholder="Latitude, Longitude (e.g., 48.5, 34.5)">
+            var controlDiv = L.DomUtil.create('div', 'leaflet-control coord-search-control');
+            controlDiv.innerHTML = `
+                <input type="text" id="coordInput" placeholder="Coordinates (Lat, Lon) or City, Country">
                 <button id="searchCoordBtn">Search</button>
             `;
 
             // Prevent click/scroll events from propagating to the map
-            L.DomEvent.disableClickPropagation(div);
-            L.DomEvent.disableScrollPropagation(div);
+            L.DomEvent.disableClickPropagation(controlDiv);
+            L.DomEvent.disableScrollPropagation(controlDiv);
+
+            var self = this; // Capture 'this' (the control instance)
 
             // Add click handler to search button
-            div.querySelector('#searchCoordBtn').addEventListener('click', function() {
-                var input = div.querySelector('#coordInput').value;
+            controlDiv.querySelector('#searchCoordBtn').addEventListener('click', function() {
+                var input = controlDiv.querySelector('#coordInput').value.trim();
                 var parts = input.split(',').map(s => parseFloat(s.trim()));
 
                 if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+                    // It looks like coordinates: try to parse them
                     var lat = parts[0];
                     var lon = parts[1];
                     if (lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180) {
                         map.setView([lat, lon], 12); // Move map and set zoom
                         // Remove previous marker if it existed
-                        if (this._searchMarker) {
-                            map.removeLayer(this._searchMarker);
+                        if (self._searchMarker) {
+                            map.removeLayer(self._searchMarker);
                         }
                         // Create and add new marker, open popup
-                        this._searchMarker = L.marker([lat, lon]).addTo(map)
+                        self._searchMarker = L.marker([lat, lon]).addTo(map)
                             .bindPopup(`Coordinates: ${lat.toFixed(4)}, ${lon.toFixed(4)}`).openPopup();
                     } else {
                         alert('Invalid coordinates. Latitude must be between -90 and 90, Longitude between -180 and 180.');
                     }
+                } else if (input) {
+                    // Not coordinates: try geocoding (search by name) using Nominatim
+                    // Important: Adhere to Nominatim's usage policy (https://operations.osmfoundation.org/policies/nominatim/)
+                    $.getJSON(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(input)}&limit=1`, function(data) {
+                        if (data && data.length > 0) {
+                            var lat = parseFloat(data[0].lat);
+                            var lon = parseFloat(data[0].lon);
+                            map.setView([lat, lon], 12);
+                            if (self._searchMarker) {
+                                map.removeLayer(self._searchMarker);
+                            }
+                            self._searchMarker = L.marker([lat, lon]).addTo(map)
+                                .bindPopup(`Location: ${data[0].display_name}<br>Coordinates: ${lat.toFixed(4)}, ${lon.toFixed(4)}`).openPopup();
+                        } else {
+                            alert('Location not found. Please try a different name or format.');
+                        }
+                    }).fail(function() {
+                        alert('Geocoding service failed. Please try again later.');
+                    });
                 } else {
-                    alert('Please enter coordinates in "Latitude, Longitude" format.');
+                    alert('Please enter coordinates or a location name.');
                 }
             });
-            return div;
+            return controlDiv;
         },
-        onRemove: function(map) { /* Cleanup on control removal */ }
+        onRemove: function(map) {
+            // Cleanup on control removal
+            if (this._searchMarker) {
+                map.removeLayer(this._searchMarker);
+                this._searchMarker = null;
+            }
+        }
     });
     // Add created search control to the map
     new CoordSearchControl().addTo(map);
@@ -219,8 +294,7 @@
         var lon = e.latlng.lng.toFixed(4); // Get longitude
         // Create and open popup with coordinates
         L.popup()
-            .setLatLng(e\ 
-.latlng)
+            .setLatLng(e.latlng) // Fixed the broken line
             .setContent(`<b>Coordinates:</b><br>${lat}, ${lon}`)
             .openOn(map);
     });
@@ -278,9 +352,9 @@
     // Load data from individual GeoJSON files in 'data' folder and add to respective layer groups
     loadGeoJson("data/ukraine.json", Ukraine);
     loadGeoJson("data/russia.json", Russia);
-    loadGeoJson("data/trenches.json", Trench); // Re-enabled
-    loadGeoJson("data/teeth.json", Teeth);     // Re-enabled
-    loadGeoJson("data/wire.json", Wire);       // Re-enabled
+    loadGeoJson("data/trenches.json", Trench);
+    loadGeoJson("data/teeth.json", Teeth);
+    loadGeoJson("data/wire.json", Wire);
 
 </script>
 </body>
