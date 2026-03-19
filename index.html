@@ -41,6 +41,13 @@
         .leaflet-control-layers-separator {
             background-color: #555 !important; /* Цвет разделителя */
         }
+        /* Убедимся, что открытый контрол слоев не слишком широкий */
+        .leaflet-control-layers-expanded {
+            width: auto; /* Ширина по содержимому */
+            min-width: 150px; /* Минимальная ширина */
+            max-width: calc(100% - 20px); /* Максимальная ширина на мобильных */
+            box-sizing: border-box;
+        }
 
         /* Стили для контрола поиска координат (сверху по центру) */
         .leaflet-control.coord-search-control {
@@ -56,6 +63,8 @@
             display: flex; /* Используем flexbox для выравнивания элементов внутри */
             align-items: center; /* Выравнивание по центру по вертикали */
             gap: 8px; /* Расстояние между элементами (поле ввода и кнопка) */
+            max-width: 90%; /* Максимальная ширина для адаптивности */
+            box-sizing: border-box; /* Учитываем padding в расчете ширины */
         }
         .coord-search-control input {
             background: #333; /* Темный фон поля ввода */
@@ -63,8 +72,7 @@
             color: #eee; /* Светлый текст */
             padding: 6px 10px; /* Внутренние отступы */
             border-radius: 3px; /* Скругленные углы */
-            width: 180px; /* Фиксированная ширина */
-            max-width: 60vw; /* Максимальная ширина для адаптивности */
+            flex-grow: 1; /* Поле ввода занимает все доступное пространство */
             font-size: 0.9em; /* Размер шрифта */
         }
         .coord-search-control button {
@@ -76,20 +84,10 @@
             cursor: pointer; /* Курсор-указатель */
             font-size: 0.9em; /* Размер шрифта */
             transition: background 0.2s; /* Плавный переход при наведении */
+            white-space: nowrap; /* Чтобы кнопка не переносилась на новую строку */
         }
         .coord-search-control button:hover {
             background: #45a049; /* Изменение цвета при наведении */
-        }
-
-        /* Стили для всплывающего окна с координатами */
-        .leaflet-popup-content-wrapper {
-            background: rgba(20, 20, 20, 0.9) !important; /* Темный полупрозрачный фон */
-            color: #fff !important; /* Белый текст */
-            border-radius: 5px; /* Скругленные углы */
-            box-shadow: 0 1px 5px rgba(0,0,0,0.4); /* Тень */
-        }
-        .leaflet-popup-tip {
-            background: rgba(20, 20, 20, 0.9) !important; /* Темный полупрозрачный фон для "хвостика" попапа */
         }
 
         /* Адаптивные настройки для мобильных устройств (ширина экрана до 768px) */
@@ -103,11 +101,6 @@
                 left: 10px; /* Отступ слева */
                 transform: translateX(0); /* Отключаем центрирование через transform */
                 top: 10px; /* Отступ сверху */
-                box-sizing: border-box; /* Учитываем padding в расчете ширины */
-            }
-            .coord-search-control input {
-                flex-grow: 1; /* Поле ввода занимает все доступное пространство */
-                width: auto; /* Сбрасываем фиксированную ширину */
             }
         }
     </style>
@@ -136,13 +129,13 @@
         attribution: 'Google Hybrid'
     });
     // Esri + Labels слой (спутник + текстовые метки)
-      // Слой Esri + метки (спутник + текстовые метки)
     var esriWithLabels = L.layerGroup([
         L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
             attribution: 'Esri World Imagery'
         }),
         L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}.png', {
-            attribution: 'CartoDB Labels',
+            attribution: 'Carto
+DB Labels',
             pane: 'overlayPane' // Чтобы метки были поверх спутника
         })
     ]);
@@ -172,8 +165,8 @@
         "<b style='color: #ADD8E6;'>Зубы дракона</b>": Teeth,
         "<b style='color: #888;'>Проволочные заграждения</b>": Wire
     };
-    // Добавляем контрол слоев в левый верхний угол, делаем его постоянно видимым
-    L.control.layers(baseMaps, overlayMaps, { position: 'topleft', collapsed: false }).addTo(map);
+    // Добавляем контрол слоев в левый верхний угол, делаем его **свернутым по умолчанию**
+    L.control.layers(baseMaps, overlayMaps, { position: 'topleft', collapsed: true }).addTo(map);
 
     // --- Функционал: Контрол поиска по координатам ---
     // Создаем пользовательский контрол Leaflet
@@ -216,10 +209,9 @@
             return div;
         },
         onRemove: function(map) { /* Очистка при удалении контрола */ }
-       });
+    });
     // Добавляем созданный контрол поиска на карту
     new CoordSearchControl().addTo(map);
-
 
     // --- Функционал: Отображение координат по долгому нажатию / правому клику ---
     // Слушаем событие 'contextmenu' (правый клик или долгое нажатие)
@@ -266,7 +258,8 @@
         if (name.includes("trench") || name.includes("окоп") || name.includes("ров")) return { color: "#FFA500", weight: 3, opacity: 1 };
         if (name.includes("teeth") || name.includes("зубы")) return { color: "#ADD8E6", weight: 2, opacity: 1 };
         if (name.includes("wire") || name.includes("проволока")) return { color: "#777", weight: 2, dashArray: "5, 10", opacity: 0.8 };
-        if (name.includes("ukraine") || name.includes("синяя") || name.includes("blue")) return { fillColor: "#0057b7", fillOpacity: 0.4, weight: 1, color: "#0057b7", opacity: 0.8 };
+        // Увеличена прозрачность украинского слоя для лучшей видимости
+        if (name.includes("ukraine") || name.includes("синяя") || name.includes("blue")) return { fillColor: "#0057b7", fillOpacity: 0.6, weight: 1, color: "#0057b7", opacity: 0.9 };
         // Стиль по умолчанию для объектов России (полигоны)
         return { fillColor: "#cc0000", fillOpacity: 0.4, weight: 1, color: "#cc0000", opacity: 0.8 };
     }
@@ -281,11 +274,11 @@
         return L.circleMarker(latlng, { radius: 5, fillColor: "#cc0000", color: "white", weight: 1, fillOpacity: 0.9 });
     }
 
-        // --- Загрузка данных GeoJSON ---
+    // --- Загрузка GeoJSON данных ---
     // Загружаем данные из отдельных файлов в папке 'data' и добавляем их в соответствующие группы слоев
     loadGeoJson("data/ukraine.json", Ukraine);
-    loadGeoJson("data/russia.json", Russia);
-
+    loadGeoJson("data/russia\ 
+.json", Russia);
     loadGeoJson("data/trenches.json", Trench);
     loadGeoJson("data/teeth.json", Teeth);
     loadGeoJson("data/wire.json", Wire);
