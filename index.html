@@ -2,313 +2,207 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>War Map</title>
-    <!-- Viewport settings for responsive design on mobile devices -->
+    <title>War Map Pro</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        /* --- CSS Styles --- */
+        body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #0b0b0b; font-family: sans-serif; }
+        #map { width: 100%; height: 100vh; }
 
-        /* Styles for body and html: full height, hidden overflow, dark background */
-        body, html {
-            margin: 0;
-            padding: 0;
-            height: 100%; /* Occupies full available parent height */
-            overflow: hidden; /* Hide scrollbars */
-            background: #000; /* Black background */
-            font-family: Arial, sans-serif; /* Font style */
+        /* Search Bar Centered */
+        .search-container {
+            position: absolute;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            width: 350px;
+            display: flex;
+            background: rgba(20, 20, 20, 0.95);
+            padding: 6px;
+            border-radius: 10px;
+            border: 1px solid #444;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+        }
+        .search-container input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: white;
+            padding: 8px 15px;
+            outline: none;
+            font-size: 14px;
+        }
+        .search-container button {
+            background: #2c85ff;
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
         }
 
-        /* Styles for the map container #map */
-        #map {
-            width: 100%; /* 100% width */
-            height: 100vh; /* 100% viewport height */
-            /* Important: leaflet.js requires parent elements to have dimensions */
-        }
-
-        /* Styles for Leaflet layer control (top-left) */
+        /* Dark Theme Layers Control */
         .leaflet-control-layers {
-            background: rgba(20, 20, 20, 0.9) !important; /* Semi-transparent dark background */
-            color: #fff !important; /* White text */
-            border: 2px solid #444 !important; /* Dark border */
-            border-radius: 5px; /* Rounded corners */
-            box-shadow: 0 1px 5px rgba(0,0,0,0.4); /* Shadow */
+            background: #1a1a1a !important;
+            color: white !important;
+            border: 1px solid #333 !important;
+            border-radius: 8px;
         }
-        .leaflet-control-layers label {
-            color: #fff; /* White color for label text */
-        }
-        .leaflet-control-layers-separator {
-            background-color: #555 !important; /* Separator color */
-        }
-        /* Ensure expanded layer control isn't too wide */
-        .leaflet-control-layers-expanded {
-            width: auto; /* Width based on content */
-            min-width: 150px; /* Minimum width */
-            max-width: calc(100% - 20px); /* Maximum width on mobile */
-            box-sizing: border-box;
-        }
-
-        /* Styles for coordinate search control (top-center) */
-        .leaflet-control.coord-search-control {
-            position: absolute; /* Absolute positioning */
-            top: 10px; /* Top offset */
-            left: 50%; /* 50% from left edge */
-            transform: translateX(-50%); /* Center horizontally */
-            z-index: 1000; /* Above all other elements */
-            background: rgba(20, 20, 20, 0.9); /* Semi-transparent dark background */
-            padding: 8px 12px; /* Inner padding */
-            border-radius: 5px; /* Rounded corners */
-            box-shadow: 0 1px 5px rgba(0,0,0,0.4); /* Shadow */
-            display: flex; /* Use flexbox for inner element alignment */
-            align-items: center; /* Align vertically in center */
-            gap: 8px; /* Space between elements (input field and button) */
-            max-width: 90%; /* Maximum width for responsiveness */
-            box-sizing: border-box; /* Include padding in width calculation */
-        }
-        .coord-search-control input {
-            background: #333; /* Dark background for input field */
-            border: 1px solid #555; /* Dark border */
-            color: #eee; /* Light text */
-            padding: 6px 10px; /* Inner padding */
-            border-radius: 3px; /* Rounded corners */
-            flex-grow: 1; /* Input field takes all available space */
-            font-size: 0.9em; /* Font size */
-        }
-        .coord-search-control button {
-            background: #4CAF50; /* Green button */
-            color: white; /* White text */
-            border: none; /* No border */
-            padding: 7px 12px; /* Inner padding */
-            border-radius: 3px; /* Rounded corners */
-            cursor: pointer; /* Pointer cursor */
-            font-size: 0.9em; /* Font size */
-            transition: background 0.2s; /* Smooth transition on hover */
-            white-space: nowrap; /* Prevent button text from wrapping */
-        }
-        .coord-search-control button:hover {
-            background: #45a049; /* Color change on hover */
-        }
-
-        /* Responsive settings for mobile devices (screen width up to 768px) */
-        @media (max-width: 768px) {
-            .leaflet-control-layers {
-                top: 55px !important; /* Shift layer control down to avoid overlapping search */
-                left: 10px !important; /* Align to left */
-            }
-            .coord-search-control {
-                width: calc(100% - 20px); /* Almost full screen width with margins */
-                left: 10px; /* Left offset */
-                transform: translateX(0); /* Disable horizontal centering via transform */
-                top: 10px; /* Top offset */
-            }
-        }
+        .leaflet-control-layers label { color: white !important; }
+        .leaflet-control-layers-expanded { padding: 10px; }
     </style>
 </head>
 <body>
-<!-- Map container -->
+
+<div class="search-container">
+    <input type="text" id="searchInput" placeholder="Search: City, Village or Lat, Lon">
+    <button onclick="runSearch()">Search</button>
+</div>
+
 <div id="map"></div>
 
-<!-- Leaflet JS -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<!-- jQuery for JSON loading -->
 <script src="https://unpkg.com/jquery@3.7.1/dist/jquery.min.js"></script>
 
 <script>
-    /* --- JavaScript Code --- */
-
-    // Initialize Leaflet map
+    // Initialize map
     var map = L.map('map', { center: [48.3, 34.5], zoom: 6, zoomControl: false });
-    // Add standard zoom control to top-right corner
-    L.control.zoom({ position: 'topright' }).addTo(map);
+    L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-    // --- Base Layers ---
-    // Google Hybrid Layer
+    // --- BASE LAYERS ---
+    
+    // 1. Google Hybrid
     var googleHybrid = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
-        maxZoom: 20,
-        attribution: 'Google Hybrid'
+        maxZoom: 20, attribution: 'Google'
     });
-    // Esri + Labels Layer (satellite + text labels)
-    var esriWithLabels = L.layerGroup([
-        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-            attribution: 'Esri World Imagery'
-        }),
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}.png', {
-            attribution: 'CartoDB Labels',
-            pane: 'overlayPane' // To place labels above satellite imagery
-        })
-    ]);
-    // Add Google Hybrid as default layer
-    googleHybrid.addTo(map);
 
-    // --- Feature Layers ---
-    // Create layer groups for each feature type.
-    // addTo(map) adds them to the map immediately.
+    // 2. ESRI WORLD IMAGERY (Default for high-res)
+    var esriSatellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Esri World Imagery', maxZoom: 19
+    });
+
+    // 3. SENTINEL-2 CLOUDLESS (MOST RECENT GLOBAL - LOWER RES)
+    var sentinel2 = L.tileLayer('https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2023/default/googlemaps-grid/{z}/{y}/{x}.jpg', {
+        attribution: 'Sentinel-2 EOX', maxZoom: 16
+    });
+
+    // 4. NASA FIRMS (Active Fires / Explosions - 24h)
+    var nasaFirms = L.tileLayer('https://firms.modaps.eosdis.nasa.gov/mapserver/wms/v1/currect/?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&LAYERS=fires_viirs_snpp&STYLES=&FORMAT=image/png&TRANSPARENT=true&HEIGHT=256&WIDTH=256&SRS=EPSG:3857&BBOX={bbox}', {
+        attribution: 'NASA FIRMS'
+    });
+
+    // Set Esri Satellite as the default base layer
+    esriSatellite.addTo(map);
+
+    // --- FEATURE GROUPS ---
     var Russia = L.layerGroup().addTo(map);
     var Ukraine = L.layerGroup().addTo(map);
-    var Trench = L.layerGroup().addTo(map);
+    var Trenches = L.layerGroup().addTo(map);
     var Teeth = L.layerGroup().addTo(map);
     var Wire = L.layerGroup().addTo(map);
+    // AirDefense layer group removed
 
-    // --- Layer Control ---
-    // Define objects for layer control: base maps and overlays (our features)
+    // --- LAYER CONTROL ---
     var baseMaps = {
+        "Esri High-Res": esriSatellite,
         "Google Hybrid": googleHybrid,
-        "Esri + Labels": esriWithLabels
+        "Sentinel-2 (Latest)": sentinel2
     };
     var overlayMaps = {
-        // Use HTML for styling text in layer menu
-        "<b style='color: #ff4d4d;'>Russia (Default)</b>": Russia,
-        "<b style='color: #00BFFF;'>Ukraine</b>": Ukraine, // Updated color to DeepSkyBlue
-        "<b style='color: #FFA500;'>Trenches</b>": Trench,
-        "<b style='color: #ADD8E6;'>Dragon's Teeth</b>": Teeth,
-        "<b style='color: #888;'>Wire Fences</b>": Wire
+        "<b style='color: #ff4d4d'>Russia (Occupied)</b>": Russia,
+        "<b style='color: #2c85ff'>Ukraine</b>": Ukraine,
+        "<b style='color: #ffa500'>Trenches</b>": Trenches,
+        "<b style='color: #ADD8E6'>Dragon's Teeth</b>": Teeth,
+        "<b style='color: #888'>Wire Fence</b>": Wire,
+        "<b style='color: #ff0000'>Active Fires (NASA)</b>": nasaFirms
+        // AirDefense overlay removed
     };
-    // Add layer control to top-left, make it **collapsed by default**
-    L.control.layers(baseMaps, overlayMaps, { position: 'topleft', collapsed: true }).addTo(map);
+    L.control.layers(baseMaps, overlayMaps, { position: 'topleft', collapsed: false }).addTo(map);
 
-    // --- Feature: Coordinate/Location Search Control ---
-    // Create a custom Leaflet control
-    var CoordSearchControl = L.Control.extend({
-        _searchMarker: null, // Private property to hold the search marker
-        onAdd: function(map) {
-            var controlDiv = L.DomUtil.create('div', 'leaflet-control coord-search-control');
-            controlDiv.innerHTML = `
-                <input type="text" id="coordInput" placeholder="Coordinates (Lat, Lon) or City, Country">
-                <button id="searchCoordBtn">Search</button>
-            `;
+    // --- SEARCH LOGIC ---
+    var currentMarker;
+    function runSearch() {
+        var query = document.getElementById('searchInput').value.trim();
+        if (!query) return;
 
-            // Prevent click/scroll events from propagating to the map
-            L.DomEvent.disableClickPropagation(controlDiv);
-            L.DomEvent.disableScrollPropagation(controlDiv);
-
-            var self = this; // Capture 'this' (the control instance)
-
-            // Add click handler to search button
-            controlDiv.querySelector('#searchCoordBtn').addEventListener('click', function() {
-                var input = controlDiv.querySelector('#coordInput').value.trim();
-                var parts = input.split(',').map(s => parseFloat(s.trim()));
-
-                if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
-                    // It looks like coordinates: try to parse them
-                    var lat = parts[0];
-                    var lon = parts[1];
-                    if (lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180) {
-                        map.setView([lat, lon], 12); // Move map and set zoom
-                        // Remove previous marker if it existed
-                        if (self._searchMarker) {
-                            map.removeLayer(self._searchMarker);
-                        }
-                        // Create and add new marker, open popup
-                        self._searchMarker = L.marker([lat, lon]).addTo(map)
-                            .bindPopup(`Coordinates: ${lat.toFixed(4)}, ${lon.toFixed(4)}`).openPopup();
-                    } else {
-                        alert('Invalid coordinates. Latitude must be between -90 and 90, Longitude between -180 and 180.');
-                    }
-                } else if (input) {
-                    // Not coordinates: try geocoding (search by name) using Nominatim
-                    // Important: Adhere to Nominatim's usage policy (https://operations.osmfoundation.org/policies/nominatim/)
-                    $.getJSON(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(input)}&limit=1`, function(data) {
-                        if (data && data.length > 0) {
-                            var lat = parseFloat(data[0].lat);
-                            var lon = parseFloat(data[0].lon);
-                            map.setView([lat, lon], 12);
-                            if (self._searchMarker) {
-                                map.removeLayer(self._searchMarker);
-                            }
-                            self._searchMarker = L.marker([lat, lon]).addTo(map)
-                                .bindPopup(`Location: ${data[0].display_name}<br>Coordinates: ${lat.toFixed(4)}, ${lon.toFixed(4)}`).openPopup();
-                        } else {
-                            alert('Location not found. Please try a different name or format.');
-                        }
-                    }).fail(function() {
-                        alert('Geocoding service failed. Please try again later.');
-                    });
+        // Coordinates check
+        var parts = query.split(',').map(Number);
+        if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+            var latlng = [parts[0], parts[1]];
+            map.setView(latlng, 12);
+            mark(latlng, "Coords: " + query);
+        } else {
+            // City/Village search
+            $.getJSON('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(query), function(data) {
+                if (data.length > 0) {
+                    var loc = [data[0].lat, data[0].lon];
+                    map.setView(loc, 12);
+                    mark(loc, data[0].display_name);
                 } else {
-                    alert('Please enter coordinates or a location name.');
+                    alert("Location not found");
                 }
             });
-            return controlDiv;
-        },
-        onRemove: function(map) {
-            // Cleanup on control removal
-            if (this._searchMarker) {
-                map.removeLayer(this._searchMarker);
-                this._searchMarker = null;
-            }
         }
-    });
-    // Add created search control to the map
-    new CoordSearchControl().addTo(map);
+    }
 
-    // --- Feature: Display coordinates on long press / right click ---
-    // Listen for 'contextmenu' event (right click or long press)
+    function mark(latlng, title) {
+        if (currentMarker) map.removeLayer(currentMarker);
+        currentMarker = L.marker(latlng).addTo(map).bindPopup(title).openPopup();
+    }
+
+    // --- STYLING for LINES and POLYGONS (GeoJSON data for countries, trenches etc.) ---
+    function styleFeature(feature) {
+        var name = (feature.properties.name || "").toLowerCase();
+        
+        // UKRAINE - Blue
+        if (name.includes("ukraine") || name.includes("ua")) {
+            return { color: "#2c85ff", fillColor: "#2c85ff", fillOpacity: 0.5, weight: 1.5 };
+        }
+        
+        // RUSSIA - Transparent Red, NO BORDER
+if (name.includes("russia") || name.includes("ru")) {
+            return { color: "transparent", fillColor: "#d11919", fillOpacity: 0.15, weight: 0 };
+        }
+
+        // TRENCHES - Orange
+        if (name.includes("trench")) return { color: "#ffa500", weight: 3 };
+        // TEETH - Light Blue
+        if (name.includes("teeth")) return { color: "#ADD8E6", weight: 2 };
+        // WIRE - Grey Dash
+        if (name.includes("wire")) return { color: "#888", weight: 2, dashArray: "5, 10" };
+
+        return { color: "grey", weight: 1 }; // Default style for unknown features
+    }
+
+    // --- DATA LOADING ---
+    function loadGeo(url, group) { // Simplified loadGeo, no longer needs isPointsLayer
+        $.getJSON(url, function(data) {
+            L.geoJSON(data, {
+                style: styleFeature, // Always use styleFeature for remaining data
+                onEachFeature: function(f, l) {
+                    if (f.properties.name) l.bindPopup(f.properties.name);
+                    l.addTo(group);
+                }
+            });
+        }).fail(function() { console.log("Missing or broken file: " + url); });
+    }
+
+    // Load GeoJSON data
+    loadGeo("data/ukraine.json", Ukraine);
+    loadGeo("data/russia.json", Russia);
+    loadGeo("data/trenches.json", Trenches);
+    loadGeo("data/teeth.json", Teeth);
+    loadGeo("data/wire.json", Wire);
+    // loadGeo("data/air_defense_sample.json", AirDefense, true); -- Air Defense data loading removed
+
+    // Right-click for coordinates
     map.on('contextmenu', function(e) {
-        var lat = e.latlng.lat.toFixed(4); // Get latitude
-        var lon = e.latlng.lng.toFixed(4); // Get longitude
-        // Create and open popup with coordinates
-        L.popup()
-            .setLatLng(e.latlng)
-            .setContent(`<b>Coordinates:</b><br>${lat}, ${lon}`)
+        L.popup().setLatLng(e.latlng)
+            .setContent("Coordinates: " + e.latlng.lat.toFixed(5) + ", " + e.latlng.lng.toFixed(5))
             .openOn(map);
     });
-
-    // --- Function to load GeoJSON data ---
-    // Takes file URL and layer group for adding data
-    function loadGeoJson(url, layerGroup) {
-        // Use $.getJSON to load data from specified URL
-        $.getJSON(url, function(data) {
-            // Create GeoJSON layer
-            L.geoJSON(data, {
-                style: featureStyle, // Apply styling function for polygons/lines
-                pointToLayer: featurePointToLayer, // Apply function for creating markers for points
-                onEachFeature: function(feature, layer) { // Function to process each GeoJSON feature
-                    layer.addTo(layerGroup); // Add feature to the corresponding layer group
-                    // If feature has 'name' property, bind popup
-                    if (feature.properties.name) {
-                        layer.bindPopup(feature.properties.name);
-                    }
-                }
-            });
-        }).fail(function(jqxhr, textStatus, error) { // Handle file loading errors
-            var err = textStatus + ", " + error;
-            console.error(`Error loading ${url}: ${err}`);
-            alert(`Error loading ${url}: ${err}. Ensure the file exists and is correctly formatted.`);
-        });
-    }
-
-    // --- GeoJSON Styling and Feature Creation Functions ---
-
-    // Style for polygons and lines
-    function featureStyle(feature) {
-        var name = (feature.properties.name || "").toLowerCase(); // Feature name in lowercase
-        // Define style based on feature name
-        if (name.includes("trench")) return { color: "#FFA500", weight: 3, opacity: 1 };
-        if (name.includes("teeth")) return { color: "#ADD8E6", weight: 2, opacity: 1 };
-        if (name.includes("wire")) return { color: "#777", weight: 2, dashArray: "5, 10", opacity: 0.8 };
-        // Ukraine layer: DeepSkyBlue, slightly more opaque
-        if (name.includes("ukraine") || name.includes("blue")) return { fillColor: "#00BFFF", fillOpacity: 0.6, weight: 1, color: "#00BFFF", opacity: 0.9 };
-        // Russia layer: moretransparent, no border
-        return { fillColor: "#cc0000", fillOpacity: 0.15, weight: 0, color: 'transparent', opacity: 0 }; // No border for polygons
-    }
-
-    // Style for point features (creating markers)
-    function featurePointToLayer(feature, latlng) {
-        var name = (feature.properties.name || "").toLowerCase();
-        // Create different marker types based on feature type
-        if (name.includes("teeth")) return L.circleMarker(latlng, { radius: 3, fillColor: "#ADD8E6", color: "#4d94ff", weight: 1, fillOpacity: 1 });
-        if (name.includes("ukraine")) return L.circleMarker(latlng, { radius: 5, fillColor: "#00BFFF", color: "white", weight: 1, fillOpacity: 0.9 });
-        // Russia point marker: transparent border
-        return L.circleMarker(latlng, { radius: 5, fillColor: "#cc0000", color: "transparent", weight: 0, fillOpacity: 0.9 }); // No border for points
-    }
-
-    // --- Load GeoJSON Data ---
-    // Load data from individual GeoJSON files in 'data' folder and add to respective layer groups
-    loadGeoJson("data/ukraine.json", Ukraine);
-    loadGeoJson("data/russia.json", Russia);
-    loadGeoJson("data/trenches.json", Trench);
-    loadGeoJson("data/teeth.json", Teeth);
-    loadGeoJson("data/wire.json", Wire);
 
 </script>
 </body>
