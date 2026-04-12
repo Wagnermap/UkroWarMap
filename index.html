@@ -2,206 +2,160 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>War Map Pro</title>
+    <title>OSINT Military Map</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.draw@1.0.4/dist/leaflet.draw.css" />
     <style>
         body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #0b0b0b; font-family: sans-serif; }
         #map { width: 100%; height: 100vh; }
 
-        /* Search Bar Centered */
+        /* Панель поиска */
         .search-container {
-            position: absolute;
-            top: 15px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 1000;
-            width: 350px;
-            display: flex;
-            background: rgba(20, 20, 20, 0.95);
-            padding: 6px;
-            border-radius: 10px;
-            border: 1px solid #444;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+            position: absolute; top: 15px; left: 50%; transform: translateX(-50%);
+            z-index: 1000; width: 350px; display: flex;
+            background: rgba(20, 20, 20, 0.95); padding: 6px; border-radius: 10px;
+            border: 1px solid #444; box-shadow: 0 4px 20px rgba(0,0,0,0.6);
         }
-        .search-container input {
-            flex: 1;
-            background: transparent;
-            border: none;
-            color: white;
-            padding: 8px 15px;
-            outline: none;
-            font-size: 14px;
-        }
-        .search-container button {
-            background: #2c85ff;
-            color: white;
-            border: none;
-            padding: 8px 20px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: bold;
-        }
+        .search-container input { flex: 1; background: transparent; border: none; color: white; padding: 8px 15px; outline: none; }
+        .search-container button { background: #2c85ff; color: white; border: none; padding: 8px 20px; border-radius: 6px; cursor: pointer; }
 
-        /* Dark Theme Layers Control */
-        .leaflet-control-layers {
-            background: #1a1a1a !important;
-            color: white !important;
-            border: 1px solid #333 !important;
-            border-radius: 8px;
+        /* Панель даты (для Sentinel) */
+        .date-container {
+            position: absolute; bottom: 80px; left: 20px; z-index: 1000;
+            background: rgba(20, 20, 20, 0.9); padding: 10px; border-radius: 8px;
+            border: 1px solid #444; color: white; display: flex; flex-direction: column; gap: 5px;
         }
-        .leaflet-control-layers label { color: white !important; }
-        .leaflet-control-layers-expanded { padding: 10px; }
+        .date-container input { background: #333; border: 1px solid #555; color: white; padding: 5px; border-radius: 4px; }
+
+        .leaflet-control-layers { background: #1a1a1a !important; color: white !important; }
+        .export-button {
+            position: absolute; bottom: 20px; right: 20px; z-index: 1000;
+            background: #2c85ff; color: white; border: none; padding: 10px 15px;
+            border-radius: 6px; cursor: pointer; font-weight: bold;
+        }
     </style>
 </head>
 <body>
 
 <div class="search-container">
-    <input type="text" id="searchInput" placeholder="Search: City, Village or Lat, Lon">
+    <input type="text" id="searchInput" placeholder="Search location or coordinates...">
     <button onclick="runSearch()">Search</button>
 </div>
 
+<div class="date-container" id="datePanel" style="display: none;">
+    <label>Sentinel-2 Date:</label>
+    <input type="date" id="satDate" onchange="updateSentinel()">
+</div>
+
 <div id="map"></div>
+<button class="export-button" onclick="exportDrawnData()">Export GeoJSON</button>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/jquery@3.7.1/dist/jquery.min.js"></script>
+<script src="https://unpkg.com/leaflet.draw@1.0.4/dist/leaflet.draw.js"></script>
 
 <script>
-    // Initialize map
-    var map = L.map('map', { center: [48.3, 34.5], zoom: 6, zoomControl: false });
+    // Инициализация карты
+    var map = L.map('map', { center: [47.5, 36.5], zoom: 10, zoomControl: false });
     L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-    // --- BASE LAYERS ---
-    
-    // 1. Google Hybrid
-    var googleHybrid = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
-        maxZoom: 20, attribution: 'Google'
-    });
+    // --- СЛОИ СПУТНИКОВ ---
 
-    // 2. ESRI WORLD IMAGERY (Default for high-res)
-    var esriSatellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-        attribution: 'Esri World Imagery', maxZoom: 19
-    });
+    // 1. Google Hybrid (Высокое качество)
+    var googleHybrid = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', { maxZoom: 20 });
 
-    // 3. SENTINEL-2 CLOUDLESS (MOST RECENT GLOBAL - LOWER RES)
-    var sentinel2 = L.tileLayer('https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2023/default/googlemaps-grid/{z}/{y}/{x}.jpg', {
-        attribution: 'Sentinel-2 EOX', maxZoom: 16
-    });
+    // 2. ESRI World Imagery (Высокое качество, окопы видны лучше всего)
+    var esriSatellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 });
 
-    // 4. NASA FIRMS (Active Fires / Explosions - 24h)
-    var nasaFirms = L.tileLayer('https://firms.modaps.eosdis.nasa.gov/mapserver/wms/v1/currect/?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&LAYERS=fires_viirs_snpp&STYLES=&FORMAT=image/png&TRANSPARENT=true&HEIGHT=256&WIDTH=256&SRS=EPSG:3857&BBOX={bbox}', {
-        attribution: 'NASA FIRMS'
-    });
+    // 3. Mapbox Satellite (Иногда новее и четче Google)
+    var mapboxSat = L.tileLayer('https://api.mapbox.com/v4/mapbox.satellite/{z}/{x}/{y}.jpg90?access_token=pk.eyJ1IjoiZGVlcHN0YXRlbWFwIiwiYSI6ImNsYmZueXFicTAxeXozcm55M3I4OWV0dmMifQ', { maxZoom: 20 });
 
-    // Set Esri Satellite as the default base layer
+    // 4. Sentinel-2 Daily (Обновляется раз в 5 дней, но низкое разрешение)
+    var sentinelLayer = L.tileLayer('', { maxZoom: 16 });
+
+    // Функция обновления Sentinel-2 по дате
+    function updateSentinel() {
+        var date = document.getElementById('satDate').value;
+        if (!date) return;
+        
+        // Используем сервис Sentinel Hub через EOX
+        var url = 'https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-' + date.substring(0,4) + '/default/googlemaps-grid/{z}/{y}/{x}.jpg';
+        sentinelLayer.setUrl(url);
+    }
+
+    // Установка даты по умолчанию (сегодня)
+    document.getElementById('satDate').value = new Date().toISOString().split('T')[0];
     esriSatellite.addTo(map);
 
-    // --- FEATURE GROUPS ---
+    // --- ГРУППЫ ДАННЫХ ---
     var Russia = L.layerGroup().addTo(map);
     var Ukraine = L.layerGroup().addTo(map);
     var Trenches = L.layerGroup().addTo(map);
-    var Teeth = L.layerGroup().addTo(map);
-    var Wire = L.layerGroup().addTo(map);
-    // AirDefense layer group removed
+    var drawnItems = new L.FeatureGroup().addTo(map);
 
-    // --- LAYER CONTROL ---
+    // --- МЕНЮ СЛОЕВ ---
     var baseMaps = {
-        "Esri High-Res": esriSatellite,
+        "Esri High-Res (Best Quality)": esriSatellite,
         "Google Hybrid": googleHybrid,
-        "Sentinel-2 (Latest)": sentinel2
+        "Mapbox High-Res": mapboxSat,
+        "Sentinel-2 Daily (Updated)": sentinelLayer
     };
+
     var overlayMaps = {
-        "<b style='color: #ff4d4d'>Russia (Occupied)</b>": Russia,
+        "<b style='color: #ff4d4d'>Russia</b>": Russia,
         "<b style='color: #2c85ff'>Ukraine</b>": Ukraine,
-        "<b style='color: #ffa500'>Trenches</b>": Trenches,
-        "<b style='color: #ADD8E6'>Dragon's Teeth</b>": Teeth,
-        "<b style='color: #888'>Wire Fence</b>": Wire,
-        "<b style='color: #ff0000'>Active Fires (NASA)</b>": nasaFirms
-        // AirDefense overlay removed
+        "<b style='color: #ffa500'>Trenches (Static)</b>": Trenches,
+        "<b style='color: #FFFF00'>Your Drawings</b>": drawnItems
     };
+
     L.control.layers(baseMaps, overlayMaps, { position: 'topleft', collapsed: false }).addTo(map);
 
-    // --- SEARCH LOGIC ---
-    var currentMarker;
-    function runSearch() {
-        var query = document.getElementById('searchInput').value.trim();
-        if (!query) return;
-
-        // Coordinates check
-        var parts = query.split(',').map(Number);
-        if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
-            var latlng = [parts[0], parts[1]];
-            map.setView(latlng, 12);
-            mark(latlng, "Coords: " + query);
+    // Показ панели даты только когда включен Sentinel
+    map.on('baselayerchange', function(e) {
+        if (e.name === "Sentinel-2 Daily (Updated)") {
+            document.getElementById('datePanel').style.display = 'block';
+            updateSentinel();
         } else {
-            // City/Village search
-            $.getJSON('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(query), function(data) {
-                if (data.length > 0) {
-                    var loc = [data[0].lat, data[0].lon];
-                    map.setView(loc, 12);
-                    mark(loc, data[0].display_name);
-                } else {
-                    alert("Location not found");
-                }
-            });
+            document.getElementById('datePanel').style.display = 'none';
         }
+    });
+
+    // --- ПОИСК ---
+    function runSearch() {
+        var query = document.getElementById('searchInput').value;
+        $.getJSON('https://nominatim.openstreetmap.org/search?format=json&q=' + query, function(data) {
+            if (data.length > 0) map.setView([data[0].lat, data[0].lon], 13);
+        });
     }
 
-    function mark(latlng, title) {
-        if (currentMarker) map.removeLayer(currentMarker);
-        currentMarker = L.marker(latlng).addTo(map).bindPopup(title).openPopup();
-    }
-
-    // --- STYLING for LINES and POLYGONS (GeoJSON data for countries, trenches etc.) ---
-    function styleFeature(feature) {
-        var name = (feature.properties.name || "").toLowerCase();
-        
-        // UKRAINE - Blue
-        if (name.includes("ukraine") || name.includes("ua")) {
-            return { color: "#2c85ff", fillColor: "#2c85ff", fillOpacity: 0.5, weight: 1.5 };
+    // --- РИСОВАНИЕ ---
+    var drawControl = new L.Control.Draw({
+        edit: { featureGroup: drawnItems },
+        draw: {
+            polyline: { shapeOptions: { color: '#ffff00', weight: 4 } },
+            polygon: { shapeOptions: { color: '#ff7800', fillOpacity: 0.3 } },
+            circle: false, rectangle: true, marker: true
         }
-        
-        // RUSSIA - Transparent Red, NO BORDER
-if (name.includes("russia") || name.includes("ru")) {
-            return { color: "transparent", fillColor: "#d11919", fillOpacity: 0.15, weight: 0 };
-        }
+    });
+    map.addControl(drawControl);
 
-        // TRENCHES - Orange
-        if (name.includes("trench")) return { color: "#ffa500", weight: 3 };
-        // TEETH - Light Blue
-        if (name.includes("teeth")) return { color: "#ADD8E6", weight: 2 };
-        // WIRE - Grey Dash
-        if (name.includes("wire")) return { color: "#888", weight: 2, dashArray: "5, 10" };
+    map.on(L.Draw.Event.CREATED, function (e) {
+        drawnItems.addLayer(e.layer);
+    });
 
-        return { color: "grey", weight: 1 }; // Default style for unknown features
+    // Экспорт
+    function exportDrawnData() {
+        var data = drawnItems.toGeoJSON();
+        var blob = new Blob([JSON.stringify(data)], {type: "application/json"});
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url; a.download = "my_trenches.geojson"; a.click();
     }
 
-    // --- DATA LOADING ---
-    function loadGeo(url, group) { // Simplified loadGeo, no longer needs isPointsLayer
-        $.getJSON(url, function(data) {
-            L.geoJSON(data, {
-                style: styleFeature, // Always use styleFeature for remaining data
-                onEachFeature: function(f, l) {
-                    if (f.properties.name) l.bindPopup(f.properties.name);
-                    l.addTo(group);
-                }
-            });
-        }).fail(function() { console.log("Missing or broken file: " + url); });
-    }
-
-    // Load GeoJSON data
-    loadGeo("data/ukraine.json", Ukraine);
-    loadGeo("data/russia.json", Russia);
-    loadGeo("data/trenches.json", Trenches);
-    loadGeo("data/teeth.json", Teeth);
-    loadGeo("data/wire.json", Wire);
-    // loadGeo("data/air_defense_sample.json", AirDefense, true); -- Air Defense data loading removed
-
-    // Right-click for coordinates
+    // Координаты по правому клику
     map.on('contextmenu', function(e) {
-        L.popup().setLatLng(e.latlng)
-            .setContent("Coordinates: " + e.latlng.lat.toFixed(5) + ", " + e.latlng.lng.toFixed(5))
-            .openOn(map);
+        alert("Coords: " + e.latlng.lat.toFixed(6) + ", " + e.latlng.lng.toFixed(6));
     });
 
 </script>
