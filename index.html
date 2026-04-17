@@ -1,164 +1,108 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>War Map Pro - Final Stable</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Карта укреплений</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet.draw@1.0.4/dist/leaflet.draw.css" />
     <style>
-        body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #0b0b0b; font-family: sans-serif; }
+        body, html { margin: 0; padding: 0; height: 100%; background: #1a1a1a; overflow: hidden; }
         #map { width: 100%; height: 100vh; }
-
-        .search-container {
-            position: absolute; top: 15px; left: 50%; transform: translateX(-50%);
-            z-index: 1000; width: 350px; display: flex;
-            background: rgba(20, 20, 20, 0.95); padding: 6px; border-radius: 10px;
-            border: 1px solid #444; box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+        
+        /* Панель даты снизу */
+        #timeline-container {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border-radius: 10px;
+            z-index: 1000;
+            color: white;
+            font-family: Arial, sans-serif;
+            text-align: center;
         }
-        .search-container input { flex: 1; background: transparent; border: none; color: white; padding: 8px 15px; outline: none; }
-        .search-container button { background: #2c85ff; color: white; border: none; padding: 8px 20px; border-radius: 6px; cursor: pointer; }
-
-        .leaflet-control-layers { background: #1a1a1a !important; color: white !important; border-radius: 8px; }
-        .leaflet-control-layers label { color: white !important; }
-
-        .export-button {
-            position: absolute; bottom: 20px; right: 20px; z-index: 1000;
-            background: #2c85ff; color: white; border: none; padding: 10px 15px;
-            border-radius: 6px; cursor: pointer; font-weight: bold;
-        }
+        input[type=range] { width: 100%; cursor: pointer; }
+        .date-display { font-size: 18px; font-weight: bold; margin-bottom: 5px; }
+        
+        /* Скрытие лишних элементов */
+        .leaflet-draw, .leaflet-control-export { display: none !important; }
     </style>
 </head>
 <body>
 
-<div class="search-container">
-    <input type="text" id="searchInput" placeholder="Search: City, Village or Coords">
-    <button onclick="runSearch()">Search</button>
+<div id="map"></div>
+
+<div id="timeline-container">
+    <div class="date-display" id="current-date">Дата: Все время</div>
+    <input type="range" id="date-slider" min="0" max="100" value="100">
 </div>
 
-<div id="map"></div>
-<button class="export-button" onclick="exportDrawnData()">Export My Drawn Items</button>
-
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://unpkg.com/jquery@3.7.1/dist/jquery.min.js"></script>
-<script src="https://unpkg.com/leaflet.draw@1.0.4/dist/leaflet.draw.js"></script>
-
 <script>
-    // Инициализация
-    var map = L.map('map', { center: [48.0, 37.5], zoom: 8, zoomControl: false });
-    L.control.zoom({ position: 'bottomright' }).addTo(map);
+    // 1. Настройка карты (темная тема)
+    const map = L.map('map').setView([47.5, 37.5], 7);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
 
-    // --- БАЗОВЫЕ СЛОИ (ТОЛЬКО РАБОЧИЕ) ---
-    var googleHybrid = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', { maxZoom: 20, attribution: 'Google' });
-    var esriSatellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Esri' });
-    var sentinelLatest = L.tileLayer('https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2023/default/googlemaps-grid/{z}/{y}/{x}.jpg', { maxZoom: 16, attribution: 'Sentinel-2' });
-
-    esriSatellite.addTo(map);
-
-    // Пожары NASA (WMS)
-    var nasaFirms = L.tileLayer.wms("https://firms.modaps.eosdis.nasa.gov/mapserver/wms/v1/currect/", {
-        layers: 'fires_viirs_snpp',
-        format: 'image/png',
-        transparent: true,
-        attribution: "NASA FIRMS"
-    });
-
-    // --- ГРУППЫ СЛОЕВ ---
-    var Russia = L.layerGroup().addTo(map);
-    var Ukraine = L.layerGroup().addTo(map);
-    var Trenches = L.layerGroup().addTo(map);
-    var Teeth = L.layerGroup().addTo(map);
-    var Wire = L.layerGroup().addTo(map);
-    var drawnItems = new L.FeatureGroup().addTo(map);
-
-    // --- МЕНЮ СЛОЕВ ---
-    var baseMaps = {
-        "Esri High-Res": esriSatellite,
-        "Google Hybrid": googleHybrid,
-        "Sentinel-2 (Latest)": sentinelLatest
-    };
-
-    var overlayMaps = {
-        "<b style='color: #ff4d4d'>Russia (Occupied)</b>": Russia,
-        "<b style='color: #2c85ff'>Ukraine</b>": Ukraine,
-        "<b style='color: #ffa500'>Trenches</b>": Trenches,
-        "<b style='color: #ADD8E6'>Dragon's Teeth</b>": Teeth,
-        "<b style='color: #888'>Wire Fence</b>": Wire,
-        "<b style='color: #ff0000'>Active Fires (NASA)</b>": nasaFirms,
-        "<b style='color: #FFFF00'>My Drawn Items</b>": drawnItems
-    };
-
-    L.control.layers(baseMaps, overlayMaps, { position: 'topleft', collapsed: false }).addTo(map);
-
-    // --- СТИЛИ ГЕОДАННЫХ ---
-    function styleFeature(feature) {
-        var name = (feature.properties.name || "").toLowerCase();
-        if (name.includes("ukraine")) return { color: "#2c85ff", fillOpacity: 0.3, weight: 1 };
-        if (name.includes("russia")) return { color: "transparent", fillColor: "#d11919", fillOpacity: 0.2, weight: 0 };
-        if (name.includes("trench")) return { color: "#ffa500", weight: 3 };
-        if (name.includes("teeth")) return { color: "#ADD8E6", weight: 2 };
-        if (name.includes("wire")) return { color: "#888", weight: 2, dashArray: "5, 10" };
-        return { color: "#fff", weight: 1 };
-    }
-
-    // --- ЗАГРУЗКА ФАЙЛОВ ---
-    function loadGeo(url, group) {
-        $.getJSON(url, function(data) {
-            L.geoJSON(data, {
-                style: styleFeature,
-                onEachFeature: function(f, l) {
-                    if (f.properties.name) l.bindPopup(f.properties.name);
-                    l.addTo(group);
-                }
-            });
-        }).fail(function() { console.log("Файл не найден: " + url); });
-    }
-
-    loadGeo("data/ukraine.json", Ukraine);
-    loadGeo("data/russia.json", Russia);
-    loadGeo("data/trenches.json", Trenches);
-    loadGeo("data/teeth.json", Teeth);
-    loadGeo("data/wire.json", Wire);
-
-    // --- ПОИСК ---
-    function runSearch() {
-        var query = document.getElementById('searchInput').value;
-        if (!query) return;
-        $.getJSON('https://nominatim.openstreetmap.org/search?format=json&q=' + query, function(data) {
-            if (data.length > 0) map.setView([data[0].lat, data[0].lon], 12);
-        });
-    }
-
-    // --- РИСОВАНИЕ ---
-    var drawControl = new L.Control.Draw({
-        edit: { featureGroup: drawnItems },
-        draw: {
-            polyline: { shapeOptions: { color: '#ffff00', weight: 4 } }, polygon: { shapeOptions: { color: '#00ff00', fillOpacity: 0.2 } },
-            circle: false, marker: true, rectangle: true
+    // 2. Логика цветов
+    function getStyle(feature, sourceFile) {
+        // Если это файл с окопами
+        if (sourceFile.includes('trenches.json')) {
+            return { color: "yellow", weight: 3, opacity: 0.8 };
         }
-    });
-    map.addControl(drawControl);
-
-    map.on(L.Draw.Event.CREATED, function (e) {
-        drawnItems.addLayer(e.layer);
-    });
-
-    // ЭКСПОРТ
-    function exportDrawnData() {
-        var data = drawnItems.toGeoJSON();
-        var blob = new Blob([JSON.stringify(data)], {type: "application/json"});
-        var a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = "my_military_data.geojson";
-        a.click();
+        // Если файл из папки russia
+        if (sourceFile.includes('/russia/')) {
+            return { color: "red", weight: 2, opacity: 0.7 };
+        }
+        // Цвет по умолчанию для остальных
+        return { color: "#3388ff", weight: 2, opacity: 0.6 };
     }
 
-    // Координаты по правому клику
-    map.on('contextmenu', function(e) {
-        L.popup().setLatLng(e.latlng)
-            .setContent("Lat: " + e.latlng.lat.toFixed(6) + "<br>Lon: " + e.latlng.lng.toFixed(6))
-            .openOn(map);
+    // 3. Список файлов для загрузки (укажите свои пути здесь)
+    const files = [
+        'data/trenches.json',
+        'data/russia/fortifications_line.json',
+        'data/others/base.json'
+    ];
+
+    let allLayers = [];
+
+    // 4. Загрузка данных
+    files.forEach(file => {
+        fetch(file)
+            .then(res => res.json())
+            .then(data => {
+                const layer = L.geoJSON(data, {
+                    style: (feature) => getStyle(feature, file),
+                    onEachFeature: (feature, layer) => {
+                        if (feature.properties && feature.properties.date) {
+                            layer.options.time = new Date(feature.properties.date).getTime();
+                        }
+                    }
+                }).addTo(map);
+                allLayers.push(layer);
+            })
+            .catch(err => console.log("Файл не найден:", file));
     });
+
+    // 5. Логика временной шкалы (Фильтр по дате)
+    const slider = document.getElementById('date-slider');
+    const dateDisplay = document.getElementById('current-date');
+
+    slider.oninput = function() {
+        // В реальном файле Брэди Африка есть поле "time" или "observed"
+        // Здесь мы просто имитируем фильтрацию
+        const val = this.value;
+        dateDisplay.innerText = "Прогресс: " + val + "%";
+        
+        allLayers.forEach(layer => {
+            layer.eachLayer(l => {
+                // Если у объекта есть свойство даты, мы его скрываем/показываем
+                // l.setStyle({opacity: 0.1}); // пример
+            });
+        });
+    };
 
 </script>
 </body>
