@@ -1,108 +1,75 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <title>Карта укреплений</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <style>
-        body, html { margin: 0; padding: 0; height: 100%; background: #1a1a1a; overflow: hidden; }
-        #map { width: 100%; height: 100vh; }
-        
-        /* Панель даты снизу */
-        #timeline-container {
-            position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 80%;
-            background: rgba(0, 0, 0, 0.8);
-            padding: 15px;
-            border-radius: 10px;
-            z-index: 1000;
-            color: white;
-            font-family: Arial, sans-serif;
-            text-align: center;
-        }
-        input[type=range] { width: 100%; cursor: pointer; }
-        .date-display { font-size: 18px; font-weight: bold; margin-bottom: 5px; }
-        
-        /* Скрытие лишних элементов */
-        .leaflet-draw, .leaflet-control-export { display: none !important; }
-    </style>
-</head>
-<body>
+// 1. Настройка карты (Спутник вместо черного фона)
+// Используем ESRI Satellite — он четче, чем Sentinel-2 и не имеет его водяных знаков
+var satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{y}/{x}/{z}', {
+    attribution: 'Imagery © Esri'
+}).addTo(map);
 
-<div id="map"></div>
+// 2. Функция автоматического выбора цвета
+function getLayerStyle(path, feature) {
+    // Окопы — всегда Желтые
+    if (path.includes('trenches.json')) {
+        return { color: "#FFFF00", weight: 3, opacity: 0.9 };
+    }
+    // Всё из папки Russia — Красное
+    if (path.includes('/russia/')) {
+        return { color: "#FF0000", weight: 2, opacity: 0.8 };
+    }
+    // Всё из папки Ukraine (например) — Синее
+    if (path.includes('/ukraine/')) {
+        return { color: "#0000FF", weight: 2, opacity: 0.8 };
+    }
+    // Остальное — Белое или любое другое
+    return { color: "#FFFFFF", weight: 2, opacity: 0.7 };
+}
 
-<div id="timeline-container">
-    <div class="date-display" id="current-date">Дата: Все время</div>
-    <input type="range" id="date-slider" min="0" max="100" value="100">
+// 3. Удаление инструментов рисования и экспорта
+// Просто не вызывайте L.Control.Draw или удалите эти строки:
+// map.removeControl(drawControl); 
+// $('.leaflet-draw').hide(); // Если используете jQuery
+
+// 4. Загрузка слоев с фильтром по дате
+var allGeoJSONLayers = [];
+
+function loadLayer(url) {
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            var layer = L.geoJSON(data, {
+                style: function(feature) { return getLayerStyle(url, feature); },
+                filter: function(feature) {
+                    // Логика фильтрации по дате (если в свойствах объекта есть 'date')
+                    if (!currentDate) return true;
+                    return new Date(feature.properties.date) <= new Date(currentDate);
+                }
+            }).addTo(map);
+            allGeoJSONLayers.push({layer: layer, data: data, url: url});
+        });
+}
+
+// 5. Временная шкала (Timeline)
+var slider = document.getElementById('dateSlider');
+slider.oninput = function() {
+    var selectedDate = this.value; // Например, "2023-12-01"
+    updateMapByDate(selectedDate);
+};
+
+function updateMapByDate(date) {
+    allGeoJSONLayers.forEach(obj => {
+        map.removeLayer(obj.layer); // Убираем старый слой
+        obj.layer = L.geoJSON(obj.data, {
+            style: function(feature) { return getLayerStyle(obj.url, feature); },
+            filter: function(feature) {
+                // Показываем только те объекты, которые появились ДО выбранной даты
+                return new Date(feature.properties.date) <= new Date(date);
+            }
+        }).addTo(map);
+    });
+}
+<div id="timeline-panel" style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); width: 70%; z-index: 1000; background: rgba(0,0,0,0.8); color: white; padding: 15px; border-radius: 15px; font-family: sans-serif; text-align: center;">
+    <div id="date-label" style="font-size: 18px; margin-bottom: 10px;">Дата: 2022-02-24</div>
+    <input type="range" id="date-slider" min="" max="" step="86400" style="width: 100%; cursor: pointer;">
 </div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script>
-    // 1. Настройка карты (темная тема)
-    const map = L.map('map').setView([47.5, 37.5], 7);
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
-
-    // 2. Логика цветов
-    function getStyle(feature, sourceFile) {
-        // Если это файл с окопами
-        if (sourceFile.includes('trenches.json')) {
-            return { color: "yellow", weight: 3, opacity: 0.8 };
-        }
-        // Если файл из папки russia
-        if (sourceFile.includes('/russia/')) {
-            return { color: "red", weight: 2, opacity: 0.7 };
-        }
-        // Цвет по умолчанию для остальных
-        return { color: "#3388ff", weight: 2, opacity: 0.6 };
-    }
-
-    // 3. Список файлов для загрузки (укажите свои пути здесь)
-    const files = [
-        'data/trenches.json',
-        'data/russia/fortifications_line.json',
-        'data/others/base.json'
-    ];
-
-    let allLayers = [];
-
-    // 4. Загрузка данных
-    files.forEach(file => {
-        fetch(file)
-            .then(res => res.json())
-            .then(data => {
-                const layer = L.geoJSON(data, {
-                    style: (feature) => getStyle(feature, file),
-                    onEachFeature: (feature, layer) => {
-                        if (feature.properties && feature.properties.date) {
-                            layer.options.time = new Date(feature.properties.date).getTime();
-                        }
-                    }
-                }).addTo(map);
-                allLayers.push(layer);
-            })
-            .catch(err => console.log("Файл не найден:", file));
-    });
-
-    // 5. Логика временной шкалы (Фильтр по дате)
-    const slider = document.getElementById('date-slider');
-    const dateDisplay = document.getElementById('current-date');
-
-    slider.oninput = function() {
-        // В реальном файле Брэди Африка есть поле "time" или "observed"
-        // Здесь мы просто имитируем фильтрацию
-        const val = this.value;
-        dateDisplay.innerText = "Прогресс: " + val + "%";
-        
-        allLayers.forEach(layer => {
-            layer.eachLayer(l => {
-                // Если у объекта есть свойство даты, мы его скрываем/показываем
-                // l.setStyle({opacity: 0.1}); // пример
-            });
-        });
-    };
 
 </script>
 </body>
